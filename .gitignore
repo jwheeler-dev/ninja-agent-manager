@@ -1,0 +1,15 @@
+# NAM local / ephemeral state (do not publish project runs)
+.nam/Memory/**
+!.nam/Memory/.gitkeep
+!.nam/Memory/Handovers/.gitkeep
+.nam/Mailbox/Agent_*/
+.nam/Runtime/**
+!.nam/Runtime/.gitkeep
+!.nam/Runtime/README.md
+.nam/Implementation_Plan.md
+.nam/Manager_Bootstrap_Prompt.md
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log

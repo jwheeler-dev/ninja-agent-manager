@@ -1,0 +1,24 @@
+{
+  "edition": "NAM 1.0 (Ninja Agent Manager)",
+  "version": "1.0.0",
+  "basedOn": "In-repo Ninja Agent Manager",
+  "customizations": [
+    "Ninja Agent Manager (NAM) — queue-based agent orchestration",
+    "Disk task queue (Manager enqueue, User opens /nam-impl)",
+    "Unified Implementation agent (research + debug + implement in one chat)",
+    "No separate adhoc/research/debug entry points",
+    "Cursor hooks (sessionStart, preCompact, stop, subagentStop)",
+    "nam-cli for role/queue/inbox/dispatch/snapshot",
+    "Conversation-scoped roles and soft snapshots",
+    "Manager must not Task-tool plan tasks",
+    "Mandatory Completion Summary for Implementation Agents",
+    "No phase/task/bug IDs in product code or docs"
+  ],
+  "cliVersion": "1.0.0-nam",
+  "templateVersion": "v1.0-nam",
+  "assistants": [],
+  "installedAt": "2026-01-08T17:30:10.263Z",
+  "lastUpdated": "2026-07-21T17:27:51.339Z",
+  "installedFiles": {},
+  "notes": "Ninja Agent Manager (NAM). In-repo custom system."
+}
