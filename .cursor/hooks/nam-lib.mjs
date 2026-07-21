@@ -247,7 +247,27 @@ export function enqueueAssignment({
     updated_at: nowIso(),
   });
 
+  // Stale impl handover often says "queue empty" — clear it when new work is enqueued
+  // so /nam-impl claims instead of running multi-step handover confirmation.
+  clearImplementationHandoverForAgent(agent);
+
   return item;
+}
+
+/**
+ * If active_implementation_handover.md targets this agent, clear it.
+ * New queued work supersedes a "waiting for next task / queue empty" handover.
+ */
+export function clearImplementationHandoverForAgent(agent) {
+  const file = runtimePath("active_implementation_handover.md");
+  const text = readText(file);
+  if (!text || !text.trim()) return false;
+  const mentions =
+    text.includes(agent) ||
+    text.toLowerCase().includes(String(agent).toLowerCase());
+  if (!mentions) return false;
+  fs.writeFileSync(file, "", "utf8");
+  return true;
 }
 
 export function claimNextAssignment(agent, { id } = {}) {

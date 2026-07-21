@@ -146,6 +146,8 @@ After successful resume, delete or empty `active_manager_handover.md`.
 
 Same pattern with `/nam-handover-impl` → `.nam/Runtime/active_implementation_handover.md` → new chat `/nam-impl`.
 
+**Queue beats stale handover:** If the agent's mailbox has pending (or claimed) work, `/nam-impl` must **claim and execute** — not run multi-step handover confirmation. `nam-cli assign` clears `active_implementation_handover.md` when it targets that agent so "queue empty" handover text cannot block the next TAP.
+
 ---
 
 ## 7. Context-pressure automation

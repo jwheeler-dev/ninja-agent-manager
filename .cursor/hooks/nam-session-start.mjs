@@ -47,14 +47,48 @@ function buildContext(conversationId) {
     );
   }
 
+  const pending = listPendingMailboxes();
   const implHandover = readText(runtimePath(IMPL_HANDOVER_POINTER));
-  if (implHandover && implHandover.trim()) {
+  const hasImplHandover = Boolean(implHandover?.trim());
+
+  if (pending.length > 0) {
+    const lines = pending.map(
+      (p) =>
+        `- **${p.agent}**: ${p.pending_count || 1} queued` +
+        `${p.taskRef ? ` — next: ${p.taskRef}` : ""} (\`${p.pendingPath}\`)`,
+    );
+    const priorityNote = hasImplHandover
+      ? [
+          "",
+          "**PRIORITY:** Live mailbox queue beats a stale Implementation handover.",
+          "If `/nam-impl` for a listed agent: **claim and execute** the pending TAP.",
+          "Do **not** run multi-step handover confirmation when pending work exists.",
+          "Clear `.nam/Runtime/active_implementation_handover.md` after claiming (or if assign already cleared it).",
+          "Treat handover text saying \"queue empty\" as outdated.",
+        ]
+      : [];
+    parts.push(
+      [
+        "## Implementation task queue",
+        "",
+        "Open/reuse the matching agent chat and run `/nam-impl`.",
+        "That agent will claim the next queued task automatically (Manager does not auto-run plan tasks).",
+        "Claim: `node .cursor/hooks/nam-cli.mjs claim --agent <Agent>`",
+        ...priorityNote,
+        "",
+        ...lines,
+      ].join("\n"),
+    );
+  }
+
+  if (hasImplHandover) {
     parts.push(
       [
         "## Pending Implementation Handover (disk)",
         "",
-        "If initializing via `/nam-impl` and this targets your agent,",
-        "load `.nam/Runtime/active_implementation_handover.md` instead of paste.",
+        pending.length > 0
+          ? "Superseded for agents with pending queue items — claim queue first; skim this only for agent name / last completed task."
+          : "If initializing via `/nam-impl` and this targets your agent (and **no** pending queue item), load `.nam/Runtime/active_implementation_handover.md` instead of paste.",
         "",
         "```markdown",
         implHandover.trim(),
@@ -80,26 +114,6 @@ function buildContext(conversationId) {
         ].join("\n"),
       );
     }
-  }
-
-  const pending = listPendingMailboxes();
-  if (pending.length > 0) {
-    const lines = pending.map(
-      (p) =>
-        `- **${p.agent}**: ${p.pending_count || 1} queued` +
-        `${p.taskRef ? ` — next: ${p.taskRef}` : ""} (\`${p.pendingPath}\`)`,
-    );
-    parts.push(
-      [
-        "## Implementation task queue",
-        "",
-        "Open/reuse the matching agent chat and run `/nam-impl`.",
-        "That agent will claim the next queued task automatically (Manager does not auto-run plan tasks).",
-        "Claim: `node .cursor/hooks/nam-cli.mjs claim --agent <Agent>`",
-        "",
-        ...lines,
-      ].join("\n"),
-    );
   }
 
   const managerInbox = readJson(runtimePath("manager_inbox.json"), null);

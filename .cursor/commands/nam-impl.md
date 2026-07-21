@@ -17,6 +17,15 @@ Greet the User and confirm you are an Implementation Agent. **Concisely** state 
 4. Log all completion, issues, or blockers in the designated Memory System following established protocols.
 5. Register role state and present the mandatory Completion Summary on task finish (Automation Guide).
 
+### Init priority (mandatory)
+
+On `/nam-impl` start, decide in this order:
+
+1. **Pending (or claimed) mailbox work for your agent** → register as that agent, **claim if needed**, and **execute the TAP immediately**. Live queue wins.
+2. Else **disk Implementation handover** with **no** pending work → follow section §7 handover protocol.
+3. Else await a pasted TAP.
+
+If both a handover pointer and a pending queue item exist: **do not** run multi-step handover confirmation / assurance questions. Skim handover only for agent name and last completed task, clear `.nam/Runtime/active_implementation_handover.md`, then claim and execute. Handover text saying "queue empty" is stale whenever `nam-cli queue list` shows pending.
 ---
 
 ## 1  Task Execution Patterns
@@ -279,15 +288,19 @@ From the contents of the guides:
 
 Logging all work in the Memory Log specified by each Task Assignment Prompt using `memory_log_path` is **MANDATORY**.
 
-If `.nam/Runtime/active_implementation_handover.md` targets your agent, treat it as a Handover Prompt (disk-first) per section §7.
+If your agent has **pending/claimed** queue work, follow **Init priority** (claim/execute). Only if there is **no** queue work and `.nam/Runtime/active_implementation_handover.md` targets your agent, treat it as a Handover Prompt (disk-first) per section §7.
 
 ---
 
 ## 7  Handover Procedures
-When you receive a **Handover Prompt** (disk pointer or paste) instead of a Task Assignment Prompt, you are taking over from a previous Implementation Agent instance that approached context window limits.
+When you receive a **Handover Prompt** (disk pointer or paste) **and there is no pending/claimed mailbox item for your agent**, you are taking over from a previous Implementation Agent instance that approached context window limits.
 
 ### Disk-first handover
-If `.nam/Runtime/active_implementation_handover.md` exists and matches your agent, load it as the Handover Prompt and **do not ask the User to paste**. After successful resume, delete or empty that pointer file.
+If `.nam/Runtime/active_implementation_handover.md` exists and matches your agent **and** the mailbox has no pending/claimed item, load it as the Handover Prompt and **do not ask the User to paste**. After successful resume, delete or empty that pointer file.
+
+### Handover + pending queue (common after Manager assigns next work)
+- **Queue wins.** Clear the handover pointer, register the agent from the TAP/`agent_assignment`, claim, and execute.
+- Do **not** pause for handover step confirmations or "assurance questions" about stale "queue empty" text.
 
 ### Handover Context Integration
 - **Follow Handover Prompt instructions** these include reading .nam/Guides/Implementation_Agent_Handover_Guide.md (if present), reviewing outgoing agents task execution history and processing their active memory context
@@ -297,8 +310,8 @@ If `.nam/Runtime/active_implementation_handover.md` exists and matches your agen
 - Run `node .cursor/hooks/nam-cli.mjs role set --role implementation --agent <YourAgent> --eligible false`
 
 ### Handover vs Normal Task Flow
-- **Normal initialization**: Claim next queued assignment if present and start it; else await paste
-- **Handover initialization**: Receive Handover Prompt with context integration protocols, then await task continuation or new assignment
+- **Normal / queued initialization**: Claim next queued assignment if present and start it; else await paste
+- **Handover-only initialization**: Receive Handover Prompt with context integration protocols **only when the mailbox has no pending work**, then await task continuation or new assignment
 
 ---
 
@@ -316,4 +329,4 @@ If `.nam/Runtime/active_implementation_handover.md` exists and matches your agen
 
 ---
 
-**Confirm your understanding of all your responsibilities and await your first Task Assignment Prompt, mailbox claim, OR Handover Prompt.**
+**Confirm your understanding of all your responsibilities.** If the mailbox has pending work for your agent, **claim and execute it now**. Otherwise await a Task Assignment Prompt, mailbox claim, OR (only if no queue work) a Handover Prompt.

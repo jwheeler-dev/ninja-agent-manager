@@ -192,6 +192,8 @@ async function cmdAssign(args) {
     ok: true,
     enqueued: item,
     pending_count: summary.pending_count,
+    cleared_impl_handover:
+      "cleared if active_implementation_handover.md targeted this agent",
     user_hint: `Open/reuse ${agent} chat and run /nam-impl — it will claim the next queued task.`,
   });
 }
