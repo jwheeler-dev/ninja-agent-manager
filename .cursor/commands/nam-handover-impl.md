@@ -50,7 +50,7 @@ Synthesize current task execution state by reviewing the Memory Logs you populat
 ### Step 3: Artifact Creation
 Create Implementation Agent Handover File and Handover Prompt using templates in section §4. Follow file organization in section §5.
 
-**Disk pointer (required):** Also write the full Handover Prompt body to `.nam/Runtime/active_implementation_handover.md` (see `.nam/Guides/Automation_Guide.md`). Delete `.nam/Runtime/pending_handover.json` if present. Clear outgoing role via `node .cursor/hooks/nam-cli.mjs role clear` after artifacts are written.
+**Disk pointer (required):** Also write the full Handover Prompt body to `.nam/Runtime/active_implementation_handover.md` (see `.nam/Guides/Automation_Guide.md`). Clear outgoing role via `node .cursor/hooks/nam-cli.mjs role clear` after artifacts are written.
 
 ### Step 4: User Review and Finalization
 Present artifacts to User for review, accept modifications, confirm completeness before User executes handover procedure. Prefer the disk pointer path over paste.

@@ -23,7 +23,6 @@ import {
   mailboxPath,
   nowIso,
   readJson,
-  readText,
   resolveConversationId,
   runtimePath,
   saveDispatchStore,
@@ -31,7 +30,6 @@ import {
   setRole,
   summarizeAgentQueue,
   writeJson,
-  writeSoftSnapshot,
   ensureDir,
 } from "./nam-lib.mjs";
 
@@ -53,9 +51,6 @@ Commands:
       [--task-ref TEXT] [--log PATH] [--agent NAME] [--parent implementation]
       (optional Task digression only — plan tasks use mailbox queue)
   dispatch list
-
-  snapshot write [--notes TEXT] [--conversation ID]
-  snapshot show
 
   inbox list
   inbox ack --all | --task-ref TEXT
@@ -128,16 +123,12 @@ async function cmdStatus() {
   const inbox = loadManagerInbox();
   const unread = inbox.entries.filter((e) => !e.acked);
   const dispatch = loadDispatchStore();
-  const latestSnap = readJson(runtimePath("soft_snapshot_latest.json"), null);
-  const pendingHandover = readJson(runtimePath("pending_handover.json"), null);
   printJson({
     conversation_env: process.env.NAM_CONVERSATION_ID || null,
     roles: roles.conversations || {},
     pending_mailboxes: pending,
     unread_inbox: unread.length,
     active_dispatches: dispatch.active,
-    soft_snapshot_latest: latestSnap,
-    pending_handover: pendingHandover,
   });
 }
 
@@ -280,36 +271,6 @@ async function cmdDispatch(args) {
   usage(1);
 }
 
-async function cmdSnapshot(args) {
-  const sub = args._[1];
-  if (sub === "show") {
-    const latest = readJson(runtimePath("soft_snapshot_latest.json"), null);
-    if (!latest?.path) {
-      printJson({ snapshot: null });
-      return;
-    }
-    const text = readText(
-      path.join(process.cwd(), latest.path.replace(/^\.\//, "")),
-    );
-    printJson({ ...latest, content: text });
-    return;
-  }
-  if (sub === "write") {
-    const id = requireConversation(args);
-    const roleState = getRole(id);
-    const pending = readJson(runtimePath("pending_handover.json"), null);
-    const rel = writeSoftSnapshot({
-      conversationId: id,
-      roleState,
-      pending,
-      agentNotes: typeof args.notes === "string" ? args.notes : null,
-    });
-    printJson({ ok: true, path: rel });
-    return;
-  }
-  usage(1);
-}
-
 async function cmdInbox(args) {
   const sub = args._[1];
   const inbox = loadManagerInbox();
@@ -347,7 +308,6 @@ try {
   else if (cmd === "claim") await cmdClaim(args);
   else if (cmd === "complete") await cmdComplete(args);
   else if (cmd === "dispatch") await cmdDispatch(args);
-  else if (cmd === "snapshot") await cmdSnapshot(args);
   else if (cmd === "inbox") await cmdInbox(args);
   else usage(1);
 } catch (err) {

@@ -5,6 +5,7 @@
 import {
   emit,
   listPendingMailboxes,
+  normalizeHookInput,
   readJson,
   readStdin,
   readText,
@@ -26,7 +27,7 @@ function buildContext(conversationId) {
         `Conversation id: \`${conversationId}\` (env \`NAM_CONVERSATION_ID\`).`,
         "Register role:",
         "`node .cursor/hooks/nam-cli.mjs role set --role manager|implementation --eligible false`",
-        "Prefer CLI for assign/claim/complete/dispatch/snapshot. See `.nam/Guides/Automation_Guide.md`.",
+        "Prefer CLI for assign/claim/complete/dispatch. See `.nam/Guides/Automation_Guide.md`.",
       ].join("\n"),
     );
   }
@@ -97,25 +98,6 @@ function buildContext(conversationId) {
     );
   }
 
-  const softLatest = readJson(runtimePath("soft_snapshot_latest.json"), null);
-  if (softLatest?.path) {
-    const softFromCwd = readText(softLatest.path);
-    if (softFromCwd && softFromCwd.trim()) {
-      parts.push(
-        [
-          "## Soft snapshot (context-pressure mid-cycle)",
-          "",
-          `Latest soft snapshot at \`${softLatest.path}\`.`,
-          "If resuming after compaction, read and honor the resume checklist.",
-          "",
-          "```markdown",
-          softFromCwd.trim().slice(0, 6000),
-          "```",
-        ].join("\n"),
-      );
-    }
-  }
-
   const managerInbox = readJson(runtimePath("manager_inbox.json"), null);
   if (managerInbox?.entries?.length) {
     const unread = managerInbox.entries.filter((e) => !e.acked);
@@ -141,7 +123,6 @@ function buildContext(conversationId) {
   const hasPendingWork =
     Boolean(managerHandover?.trim()) ||
     Boolean(implHandover?.trim()) ||
-    Boolean(softLatest?.path) ||
     pending.length > 0 ||
     (managerInbox?.entries || []).some((e) => !e.acked);
 
@@ -159,7 +140,7 @@ function buildContext(conversationId) {
   );
 }
 
-const input = await readStdin().catch(() => ({}));
+const input = normalizeHookInput(await readStdin().catch(() => ({})));
 const conversationId = resolveConversationId(input);
 
 const out = {};
@@ -170,4 +151,4 @@ if (conversationId) {
 const additional_context = buildContext(conversationId);
 if (additional_context) out.additional_context = additional_context;
 
-emit(out);
+emit(out, "SessionStart");

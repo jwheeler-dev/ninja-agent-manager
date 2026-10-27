@@ -1,8 +1,13 @@
 # NAM 1.0 (Ninja Agent Manager) - Automation Guide
 
-Disk-backed dispatch and context-pressure handover for NAM 1.0 (Ninja Agent Manager) in Cursor.
+Disk-backed dispatch for NAM 1.0 (Ninja Agent Manager).
 
-Hooks live in `.cursor/hooks.json` and inject/nudge via `sessionStart`, `preCompact`, `stop`, and `subagentStop`.
+Hooks live in `.cursor/hooks/` and are wired by:
+
+- **Cursor:** `.cursor/hooks.json` (`sessionStart`, `subagentStop`)
+- **VS Code Copilot Chat:** `.github/hooks/nam.json` (`SessionStart`, `SubagentStop`)
+
+Slash commands are defined once in `.cursor/commands/`. Cursor loads them directly; VS Code Copilot Chat loads wrappers in `.github/prompts/`; Continue loads wrappers in `.continue/prompts/`; Gemini CLI loads wrappers in `.gemini/commands/`; Claude Code loads wrappers in `.claude/commands/`. Claude Code does not run Cursor `sessionStart`, so pass `--conversation <id>` to `nam-cli` when `NAM_CONVERSATION_ID` is unset.
 
 ---
 
@@ -11,15 +16,14 @@ Hooks live in `.cursor/hooks.json` and inject/nudge via `sessionStart`, `preComp
 - **Manager enqueues; User opens Implementation chats; `/nam-impl` executes.**
 - Manager **must not** auto-run plan tasks (no Task-tool execution of Implementation Plan work).
 - Reduce copy-paste: queue on disk + path-only completion inbox.
-- Auto-nudge handover / soft-snapshot under context pressure.
 - Keep `.nam/Memory` as the source of truth for completed work.
-- Prefer `nam-cli` for disk mutations (roles, queue, inbox, snapshots).
+- Prefer `nam-cli` for disk mutations (roles, queue, inbox).
 
 ---
 
 ## 2. Role registration (conversation-scoped)
 
-`sessionStart` sets env `NAM_CONVERSATION_ID`. Roles are stored per conversation in `.nam/Runtime/roles.json` (mirrored to `active_role.json` for convenience).
+`sessionStart` (Cursor) sets env `NAM_CONVERSATION_ID`. VS Code Copilot Chat injects the same id as session context (`session_id`) but does not export the env var — pass `--conversation` to `nam-cli` when the env is unset. Roles are stored per conversation in `.nam/Runtime/roles.json` (mirrored to `active_role.json` for convenience).
 
 **Preferred (CLI):**
 
@@ -37,7 +41,7 @@ node .cursor/hooks/nam-cli.mjs role clear
 | `handover_eligible` | `true` only when a full cycle is done and handover is allowed; otherwise `false` |
 | `agent_name` | Manager, or registered Implementation name |
 
-Full handover auto-nudge runs only when `handover_eligible === true` for **this** conversation. If pressure hits while ineligible, a **soft snapshot** is written instead (§7).
+`handover_eligible` is for `/nam-handover-*` when the User asks for a new chat. Hooks do not auto-nudge handover.
 
 ---
 
@@ -49,7 +53,6 @@ node .cursor/hooks/nam-cli.mjs assign --agent Agent_X --task-ref "Task X.Y - Tit
 node .cursor/hooks/nam-cli.mjs queue list --agent Agent_X
 node .cursor/hooks/nam-cli.mjs claim --agent Agent_X
 node .cursor/hooks/nam-cli.mjs complete --agent Agent_X --log <path> [--notes TEXT]
-node .cursor/hooks/nam-cli.mjs snapshot write --notes "..."
 node .cursor/hooks/nam-cli.mjs inbox list
 node .cursor/hooks/nam-cli.mjs inbox ack --all
 ```
@@ -134,7 +137,6 @@ When running `/nam-handover-manager`:
 2. Also write `.nam/Runtime/active_manager_handover.md` containing the full Handover Prompt body.
 3. `node .cursor/hooks/nam-cli.mjs role clear` after artifacts are written.
 4. Tell the User: open a **new** chat → `/nam-manager`. Paste is optional if the pointer file exists.
-5. Delete `.nam/Runtime/pending_handover.json` after successful artifact write.
 
 Incoming Manager (`/nam-manager`): if Memory Root has real project content **and** `.nam/Runtime/active_manager_handover.md` exists, load that file and **do not ask the User to paste**.
 
@@ -150,23 +152,14 @@ Same pattern with `/nam-handover-impl` → `.nam/Runtime/active_implementation_h
 
 ---
 
-## 7. Context-pressure automation
+## 7. Hooks
 
 | Hook | Behavior |
 |------|----------|
-| `sessionStart` | Sets `NAM_CONVERSATION_ID`; injects queue / handover / soft-snapshot / inbox |
-| `preCompact` | Writes `.nam/Runtime/pending_handover.json` |
-| `stop` (eligible) | Followup to run `/nam-handover-manager` or `/nam-handover-impl` for this conversation |
-| `stop` (ineligible) | Soft snapshot + enrich via CLI |
-| `subagentStop` | Closes optional Impl Task digressions (`[NAM_DISPATCH:…]`) |
+| `sessionStart` / `SessionStart` | Sets conversation id (Cursor: env `NAM_CONVERSATION_ID`; VS Code: session context); injects queue / handover / inbox |
+| `subagentStop` / `SubagentStop` | Closes optional Impl Task digressions (`[NAM_DISPATCH:…]`). Cursor matches the Task description; VS Code may only surface a `systemMessage` unless the dispatch id is in the subagent payload. |
 
-### Soft snapshots
-
-When context pressure hits mid-cycle (`handover_eligible` is not `true`):
-
-1. Hook writes `.nam/Runtime/soft_snapshots/<conversation>.md` and `soft_snapshot_latest.json`.
-2. Agent enriches: `node .cursor/hooks/nam-cli.mjs snapshot write --notes "..."`.
-3. When the cycle completes, set `--eligible true` and run full handover.
+Gemini CLI and Continue do not run these hooks. Use `/nam-handover-*` when the User wants a new chat.
 
 ---
 

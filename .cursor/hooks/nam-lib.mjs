@@ -2,7 +2,26 @@ import fs from "node:fs";
 import path from "node:path";
 
 export function projectRoot() {
-  return process.env.CURSOR_PROJECT_DIR || process.cwd();
+  return (
+    process.env.CURSOR_PROJECT_DIR ||
+    process.env.NAM_PROJECT_DIR ||
+    process.cwd()
+  );
+}
+
+/**
+ * Normalize Cursor vs VS Code / Copilot hook stdin so the same scripts work in both.
+ * VS Code sends `session_id`, `cwd`, and `stop_hook_active`; Cursor sends
+ * `conversation_id` and `loop_count`.
+ */
+export function normalizeHookInput(input = {}) {
+  if (input.cwd && typeof input.cwd === "string" && !process.env.NAM_PROJECT_DIR) {
+    process.env.NAM_PROJECT_DIR = input.cwd;
+  }
+  if (input.loop_count == null && input.stop_hook_active) {
+    input.loop_count = 1;
+  }
+  return input;
 }
 
 export function namPath(...parts) {
@@ -55,11 +74,6 @@ export function resolveConversationId(input = {}) {
     process.env.NAM_CONVERSATION_ID ||
     null
   );
-}
-
-export function safeConversationKey(conversationId) {
-  if (!conversationId) return null;
-  return String(conversationId).replace(/[^a-zA-Z0-9._-]+/g, "_").slice(0, 120);
 }
 
 function loadRolesStore() {
@@ -400,89 +414,6 @@ export function saveDispatchStore(store) {
   writeJson(runtimePath("task_dispatch.json"), store);
 }
 
-export function writeSoftSnapshot({
-  conversationId,
-  roleState,
-  pending,
-  agentNotes,
-}) {
-  const key = safeConversationKey(conversationId) || "unknown";
-  const dir = runtimePath("soft_snapshots");
-  ensureDir(dir);
-  const rel = `.nam/Runtime/soft_snapshots/${key}.md`;
-  const abs = runtimePath("soft_snapshots", `${key}.md`);
-
-  const mailboxes = listPendingMailboxes();
-  const inbox = loadManagerInbox();
-  const unread = inbox.entries.filter((e) => !e.acked).slice(-8);
-  const dispatch = loadDispatchStore();
-
-  const body = [
-    `# NAM Soft Snapshot`,
-    ``,
-    `> Auto-written under context pressure while full handover was not eligible.`,
-    `> Enrich the **Agent notes** section, then continue. Run full handover when the cycle completes.`,
-    ``,
-    `- **conversation_id:** ${conversationId || "unknown"}`,
-    `- **role:** ${roleState?.role || "unknown"}`,
-    `- **agent_name:** ${roleState?.agent_name || "n/a"}`,
-    `- **handover_eligible:** ${roleState?.handover_eligible ?? "n/a"}`,
-    `- **role_notes:** ${roleState?.notes || "(none)"}`,
-    `- **created_at:** ${nowIso()}`,
-    `- **context_usage_percent:** ${pending?.context_usage_percent ?? "n/a"}`,
-    `- **pending_handover_trigger:** ${pending?.trigger || "n/a"}`,
-    ``,
-    `## In-flight mailboxes`,
-    ``,
-    mailboxes.length
-      ? mailboxes.map((m) => `- ${m.agent}: \`${m.pendingPath}\` (${m.taskRef || "no task_ref"})`).join("\n")
-      : "- (none)",
-    ``,
-    `## Unread manager inbox`,
-    ``,
-    unread.length
-      ? unread
-          .map(
-            (e) =>
-              `- ${e.task_ref || "task"} → \`${e.memory_log_path}\`${e.agent ? ` (${e.agent})` : ""}`,
-          )
-          .join("\n")
-      : "- (none)",
-    ``,
-    `## Active Task-tool dispatches`,
-    ``,
-    dispatch.active.length
-      ? dispatch.active
-          .map(
-            (d) =>
-              `- \`${d.id}\` kind=${d.kind} task=${d.task_ref || "n/a"}`,
-          )
-          .join("\n")
-      : "- (none)",
-    ``,
-    `## Agent notes (enrich on soft-snapshot followup)`,
-    ``,
-    agentNotes?.trim() ||
-      "_Waiting on agent enrichment: blocking step, in-flight task id, resume instructions, anything not yet in Memory Logs._",
-    ``,
-    `## Resume checklist`,
-    ``,
-    `1. Finish the blocking cycle step (task / Memory Log / review).`,
-    `2. Set handover_eligible via CLI when eligible.`,
-    `3. Run \`/nam-handover-manager\` or \`/nam-handover-impl\`.`,
-    ``,
-  ].join("\n");
-
-  fs.writeFileSync(abs, body, "utf8");
-  writeJson(runtimePath("soft_snapshot_latest.json"), {
-    conversation_id: conversationId || null,
-    path: rel,
-    role: roleState?.role || null,
-    updated_at: nowIso(),
-  });
-  return rel;
-}
-
 export function readStdin() {
   return new Promise((resolve, reject) => {
     let data = "";
@@ -513,6 +444,33 @@ export function readStdinText() {
   });
 }
 
-export function emit(obj) {
-  process.stdout.write(JSON.stringify(obj));
+/**
+ * Write hook stdout. Cursor reads `additional_context` / `followup_message` /
+ * `user_message` / `env`. VS Code Copilot reads `hookSpecificOutput` and
+ * `systemMessage`. Unknown fields are ignored by each host.
+ *
+ * @param {object} obj
+ * @param {"SessionStart"|"SubagentStop"|null} [eventName]
+ */
+export function emit(obj, eventName = null) {
+  const out = { ...obj };
+  const event = eventName || obj.hook_event_name || null;
+
+  if (obj.additional_context) {
+    out.hookSpecificOutput = {
+      ...(out.hookSpecificOutput || {}),
+      hookEventName: event || "SessionStart",
+      additionalContext: obj.additional_context,
+    };
+  }
+
+  if (obj.user_message && !out.systemMessage) {
+    out.systemMessage = obj.user_message;
+  }
+
+  if (obj.followup_message) {
+    if (!out.systemMessage) out.systemMessage = obj.followup_message;
+  }
+
+  process.stdout.write(JSON.stringify(out));
 }

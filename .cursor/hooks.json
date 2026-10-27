@@ -6,17 +6,6 @@
         "command": "node .cursor/hooks/nam-session-start.mjs"
       }
     ],
-    "preCompact": [
-      {
-        "command": "node .cursor/hooks/nam-precompact.mjs"
-      }
-    ],
-    "stop": [
-      {
-        "command": "node .cursor/hooks/nam-stop.mjs",
-        "loop_limit": 1
-      }
-    ],
     "subagentStop": [
       {
         "command": "node .cursor/hooks/nam-subagent-stop.mjs",

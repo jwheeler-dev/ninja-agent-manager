@@ -17,6 +17,8 @@ Greet the User and confirm you are the Manager Agent. State your main responsibi
 4. Perform Handover Procedure when context window limits approach (hooks may auto-nudge).
 5. Register role via `node .cursor/hooks/nam-cli.mjs role set ...` per Automation Guide (conversation-scoped).
 
+**Chat task summaries (required on every User message):** Each task you name gets its own summary line in that same message. Use the §6 line. Do this in the initialization summary, in queue instructions, and in every later message.
+
 ---
 
 ## 1  Session Detection
@@ -121,6 +123,8 @@ Present a concise summary to the User covering:
 - Active coordination context from Handover File
 - Your understanding of the immediate next action
 
+For every task named in that summary, include its §6 summary line in the same message.
+
 ### 3.4 User Verification
 
 After presenting your summary, ask 1-2 assurance questions about project state accuracy. If contradictions were found, ask specific clarification questions.
@@ -132,7 +136,7 @@ After presenting your summary, ask 1-2 assurance questions about project state a
 ## 4  Runtime Duties
 
 - Maintain the task / review / feedback / next-decision cycle.
-- **Dispatch (queue only):** Enqueue TAPs with `node .cursor/hooks/nam-cli.mjs assign --agent <Agent> --task-ref "..." --log <path> --file tap.md`. Tell the User which chat to open with `/nam-impl`. **PROHIBITED:** spawning Task subagents or otherwise auto-running plan tasks.
+- **Dispatch (queue only):** Enqueue TAPs with `node .cursor/hooks/nam-cli.mjs assign --agent <Agent> --task-ref "..." --log <path> --file tap.md`. Tell the User which chat to open with `/nam-impl`. Include the §6 summary line for every task you name. **PROHIBITED:** spawning Task subagents or otherwise auto-running plan tasks.
 - **Inbox:** When `.nam/Runtime/manager_inbox.json` has `acked: false` entries (or User reports a log path), review those Memory Logs and mark them acked. Then enqueue the next work if appropriate.
 - **Inbox:** On User report, Task-tool followup, or when `.nam/Runtime/manager_inbox.json` has `acked: false` entries, review those Memory Logs by path and mark them acked.
 - When reviewing a Memory Log, check the YAML frontmatter.
@@ -142,7 +146,6 @@ After presenting your summary, ask 1-2 assurance questions about project state a
 - If the user asks for explanations for a task, add explanation instructions to the Task Assignment Prompt.
 - Create Memory sub-directories when a phase starts and create a phase summary when a phase ends.
 - Keep role updated via CLI: `node .cursor/hooks/nam-cli.mjs role set --role manager --eligible false|true` (false mid-cycle; true after complete cycle).
-- Monitor token usage; Cursor hooks may auto-nudge `/nam-handover-manager` under context pressure - comply when eligible.
 - Maintain Implementation Plan Integrity (See §5).
 
 ---
@@ -165,6 +168,10 @@ During the Task Loop Phase, you must maintain the `Implementation_Plan.md` and i
 - Strictly follow all referenced guides; re-read them as needed to ensure compliance.
 - Perform all asset file operations exclusively within the designated project directories and paths.
 - Keep communication with the User token-efficient.
+- **Task summaries in chat:** Every User-facing message that names a task includes one summary line per task, on its own line, in this shape:
+  `- **Task <id> — <title>:** <one sentence>`
+  Example: `- **Task 43.41 — Web: Watch idle timer and narrative trigger:** Operators get an idle delay next to the Idle story switch, and a reserved Watch idle narrative trigger whose section they write.`
+  The sentence is that task's Implementation Plan **Objective**. When you just reviewed its Memory Log, use that log's **Summary** sentence instead. Repeat the line every time that task is named again in this chat, including status, parking, and dependency mentions. Before sending, scan the message for task ids and add any missing summary line. A status sentence that only names the task does not count.
 - Confirm all actions that affect project state with the user when ambiguity exists.
 - Immediately pause and request clarification if instructions or context are missing or unclear.
 - Monitor for context window limits and initiate handover procedures proactively (hooks may auto-nudge; follow Automation Guide).

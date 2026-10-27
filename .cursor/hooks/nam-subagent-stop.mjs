@@ -8,6 +8,7 @@ import path from "node:path";
 import {
   emit,
   ensureDir,
+  normalizeHookInput,
   readJson,
   readStdin,
   runtimePath,
@@ -72,7 +73,7 @@ function appendManagerInbox(entry) {
   writeJson(file, inbox);
 }
 
-const input = await readStdin().catch(() => ({}));
+const input = normalizeHookInput(await readStdin().catch(() => ({})));
 const status = input.status || "unknown";
 const description = input.description || "";
 const taskText = input.task || "";
@@ -138,7 +139,7 @@ if (status !== "completed") {
       `Read \`${resultPath}\` and decide whether to redelegate, escalate, or fall back to mailbox/chat.`,
       `Do not invent success.`,
     ].join(" "),
-  });
+  }, "SubagentStop");
   process.exit(0);
 }
 
@@ -165,7 +166,7 @@ if (kind === "plan_task" && record.memory_log_path) {
       `Review Memory Log \`${record.memory_log_path}\` and result \`${resultPath}\`.`,
       `Mark the manager inbox entry acked, then continue the Task Loop (next mailbox or Task-tool assignment as eligible).`,
     ].join(" "),
-  });
+  }, "SubagentStop");
   process.exit(0);
 }
 
@@ -176,7 +177,7 @@ if (kind === "adhoc_research" || kind === "adhoc_debug") {
       `Integrate findings from \`${resultPath}\` (and the subagent summary) into the parent task.`,
       `Document the delegation in the Memory Log. Redelegate only if findings are inadequate.`,
     ].join(" "),
-  });
+  }, "SubagentStop");
   process.exit(0);
 }
 
@@ -185,4 +186,4 @@ emit({
     `NAM Task-tool dispatch \`${dispatchId}\` completed.`,
     `Read \`${resultPath}\` and continue.`,
   ].join(" "),
-});
+}, "SubagentStop");

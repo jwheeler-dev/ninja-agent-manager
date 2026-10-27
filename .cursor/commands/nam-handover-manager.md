@@ -55,7 +55,7 @@ Synthesize current project state by reviewing:
 ### Step 3: Artifact Creation
 Create Manager Handover File and Handover Prompt using templates in §4. Follow file organization in §5.
 
-**Disk pointer (required):** Also write the full Handover Prompt body to `.nam/Runtime/active_manager_handover.md` so the incoming Manager can load it without paste (see `.nam/Guides/Automation_Guide.md`). Delete `.nam/Runtime/pending_handover.json` if present. Clear role via `node .cursor/hooks/nam-cli.mjs role clear` after artifacts are written.
+**Disk pointer (required):** Also write the full Handover Prompt body to `.nam/Runtime/active_manager_handover.md` so the incoming Manager can load it without paste (see `.nam/Guides/Automation_Guide.md`). Clear role via `node .cursor/hooks/nam-cli.mjs role clear` after artifacts are written.
 
 ### Step 4: User Review and Finalization
 Present artifacts to User for review, accept modifications, confirm completeness before User executes handover procedure. Prefer showing the pointer path rather than requiring paste.

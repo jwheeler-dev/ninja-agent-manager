@@ -7,9 +7,12 @@
     "Disk task queue (Manager enqueue, User opens /nam-impl)",
     "Unified Implementation agent (research + debug + implement in one chat)",
     "No separate adhoc/research/debug entry points",
-    "Cursor hooks (sessionStart, preCompact, stop, subagentStop)",
-    "nam-cli for role/queue/inbox/dispatch/snapshot",
-    "Conversation-scoped roles and soft snapshots",
+    "Cursor hooks (sessionStart, subagentStop)",
+    "VS Code Copilot Chat prompts (.github/prompts) and hooks (.github/hooks)",
+    "Continue prompts (.continue/prompts)",
+    "Gemini CLI commands (.gemini/commands)",
+    "nam-cli for role/queue/inbox/dispatch",
+    "Conversation-scoped roles",
     "Manager must not Task-tool plan tasks",
     "Mandatory Completion Summary for Implementation Agents",
     "No phase/task/bug IDs in product code or docs"
@@ -18,7 +21,7 @@
   "templateVersion": "v1.0-nam",
   "assistants": [],
   "installedAt": "2026-01-08T17:30:10.263Z",
-  "lastUpdated": "2026-07-21T17:27:51.339Z",
+  "lastUpdated": "2026-08-17T21:20:00.000Z",
   "installedFiles": {},
   "notes": "Ninja Agent Manager (NAM). In-repo custom system."
 }
