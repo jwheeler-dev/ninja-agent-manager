@@ -218,6 +218,31 @@ export function summarizeAgentQueue(agent) {
   };
 }
 
+/** Every agent mailbox that has a queue.json, with its items. */
+export function listAgentQueues() {
+  const root = mailboxPath();
+  if (!fs.existsSync(root)) return [];
+  return fs
+    .readdirSync(root, { withFileTypes: true })
+    .filter(
+      (e) =>
+        e.isDirectory() &&
+        e.name !== "Manager" &&
+        fs.existsSync(path.join(root, e.name, "queue.json")),
+    )
+    .map((e) => ({ agent: e.name, items: loadAgentQueue(e.name).items }));
+}
+
+/** Merge fields into one queue item (re-reads the queue so concurrent edits survive). */
+export function updateQueueItem(agent, id, patch) {
+  const store = loadAgentQueue(agent);
+  const item = store.items.find((i) => i.id === id);
+  if (!item) return null;
+  Object.assign(item, patch);
+  saveAgentQueue(agent, store);
+  return item;
+}
+
 export function enqueueAssignment({
   agent,
   taskRef,
@@ -284,6 +309,24 @@ export function clearImplementationHandoverForAgent(agent) {
   return true;
 }
 
+/**
+ * Empty the handover pointer an incoming agent just took over.
+ * Manager → active_manager_handover.md; others → active_implementation_handover.md
+ * when it targets that agent. Returns the cleared path, or null.
+ */
+export function clearHandoverPointer(agent) {
+  if (agent === "Manager") {
+    const file = runtimePath("active_manager_handover.md");
+    const text = readText(file);
+    if (!text || !text.trim()) return null;
+    fs.writeFileSync(file, "", "utf8");
+    return ".nam/Runtime/active_manager_handover.md";
+  }
+  return clearImplementationHandoverForAgent(agent)
+    ? ".nam/Runtime/active_implementation_handover.md"
+    : null;
+}
+
 export function claimNextAssignment(agent, { id } = {}) {
   const store = loadAgentQueue(agent);
   const already = store.items.find((i) => i.status === "claimed");
@@ -328,7 +371,12 @@ export function claimNextAssignment(agent, { id } = {}) {
 
 export function completeAssignment(agent, { log, notes, important, compat, adhoc }) {
   const store = loadAgentQueue(agent);
-  const item = store.items.find((i) => i.status === "claimed");
+  // Several items can be claimed at once when background implementers run the
+  // same agent's tasks in parallel; prefer the one whose Memory Log matches.
+  const claimed = store.items.filter((i) => i.status === "claimed");
+  const norm = (p) => String(p || "").replace(/\\/g, "/").replace(/^\.\//, "").toLowerCase();
+  const item =
+    (log && claimed.find((i) => norm(i.memory_log_path) === norm(log))) || claimed[0];
   if (!item) {
     throw new Error(`No claimed queue item to complete for ${agent}`);
   }

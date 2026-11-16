@@ -77,11 +77,15 @@ node .cursor/hooks/nam-cli.mjs claim --agent Agent_X
 node .cursor/hooks/nam-cli.mjs complete --agent Agent_X --log <path>
 node .cursor/hooks/nam-cli.mjs inbox list
 node .cursor/hooks/nam-cli.mjs inbox ack --all
+node .cursor/hooks/nam-cli.mjs doctor
+node .cursor/hooks/nam-cli.mjs handover register --agent Manager --file <numbered handover file>
+node .cursor/hooks/nam-cli.mjs handover accept --agent Manager
+node .cursor/hooks/nam-cli.mjs reconcile [--apply]
 ```
 
 ## Hooks
 
-The same Node scripts in `.cursor/hooks/` run in Cursor and VS Code. Cursor wires them via `.cursor/hooks.json`; VS Code Copilot Chat wires them via `.github/hooks/nam.json`.
+The same Node scripts in `.cursor/hooks/` run in Cursor, VS Code and Claude Code. Cursor wires them via `.cursor/hooks.json`, VS Code Copilot Chat via `.github/hooks/nam.json`, and Claude Code via `.claude/settings.json` (`SessionStart`, plus a `PreToolUse` hint that points `Grep`/`Glob` searches at `base ast query`).
 
 | Hook | Purpose |
 |------|---------|
@@ -111,10 +115,22 @@ The CLI, mailboxes, Memory Logs, and Implementation Plan are identical in every 
 | [Project_Breakdown_Guide.md](Guides/Project_Breakdown_Guide.md) | Setup → plan decomposition |
 | [Context_Synthesis_Guide.md](Guides/Context_Synthesis_Guide.md) | Discovery before breakdown |
 
+## Install into a project
+
+This repo is the NAM source. Copy NAM into a project with:
+
+```bash
+node .nam/Scripts/install.mjs --dest <project root> --dry-run   # preview
+node .nam/Scripts/install.mjs --dest <project root>
+```
+
+It copies the guides, commands, hooks and every host's prompt wrappers, merges NAM's hook entries into existing hook configs, and backs up each overwritten file to `<project>/.nam/tmp/backup-<date>/`. Project state (Mailbox, Memory, Runtime, Implementation Plan) is never touched, and neither is `.nam/Local/`, where a project keeps its own prompt add-ons (`.nam/Local/nam-manager.md` and so on). Then follow the base setup in `.nam/Guides/Automation_Guide.md` §10.
+
 ## Requirements
 
 - **Cursor**, or **VS Code** with GitHub Copilot Chat, Continue, or Gemini CLI
 - Node.js (for `nam-cli` and hook scripts)
+- [base](https://docs.basemode.ai/install) CLI on PATH for the code map, handoffs and forks. NAM still works without it but warns; check with `node .cursor/hooks/nam-cli.mjs doctor`.
 
 ## License
 

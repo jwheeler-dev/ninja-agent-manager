@@ -1,0 +1,15 @@
+description = "NAM 1.0 (Ninja Agent Manager) - Manager Agent"
+
+prompt = """
+You are starting a NAM Manager Agent session in this workspace.
+
+Read and follow in full the initiation prompt below.
+
+@{.cursor/commands/nam-manager.md}
+
+Follow `.nam/Guides/Automation_Guide.md` for queue, CLI, and handover rules.
+Prefer `node .cursor/hooks/nam-cli.mjs` for all disk mutations (role, assign, inbox, handover).
+Manager enqueues only — do not execute Implementation Plan tasks yourself.
+
+Do not summarize or skip the initiation prompt. Execute it.
+"""

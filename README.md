@@ -1,8 +1,8 @@
 # Ninja Agent Manager (NAM)
 
-**NAM** is a Cursor-native system for running multi-agent software projects with a clear human-in-the-loop workflow: a Manager plans and enqueues work; you open Implementation chats that claim and execute tasks; Memory Logs stay the source of truth.
+**NAM** is a disk-backed system for running multi-agent software projects with a clear human-in-the-loop workflow: a Manager plans and enqueues work; you open Implementation chats that claim and execute tasks; Memory Logs stay the source of truth.
 
-It is built around a disk-backed task queue, slash-command agents, and Cursor hooks that reduce copy-paste and nudge handovers when context pressure rises.
+It is built around a task queue, slash-command agents, and editor hooks that reduce copy-paste. The same `.nam/` tree works in **Cursor**, **VS Code (GitHub Copilot Chat, Continue, or Gemini CLI)**.
 
 ## How it works
 
@@ -38,16 +38,31 @@ Research and debug live in `/nam-impl`. There are no separate ad-hoc / research 
   Guides/           # Operating guides (start with Automation_Guide.md)
   Mailbox/          # Per-agent FIFO task queues
   Memory/           # Memory Logs and handovers
-  Runtime/          # Roles, inbox, snapshots, dispatch state
+  Runtime/          # Roles, inbox, dispatch state
   Scripts/          # Export and maintenance helpers
   Implementation_Plan.md
   metadata.json
   README.md
 
 .cursor/
-  commands/         # nam-*.md slash commands
-  hooks/            # nam-cli, nam-lib, session/stop/compact hooks
-  hooks.json
+  commands/         # Canonical nam-*.md slash-command prompts
+  hooks/            # nam-cli, nam-lib, session/subagent hooks
+  hooks.json        # Cursor lifecycle wiring
+  skills/           # Agent skills (also loaded by VS Code)
+
+.github/
+  prompts/          # VS Code Copilot slash commands (wrappers)
+  hooks/            # VS Code Copilot lifecycle wiring
+
+.gemini/
+  commands/         # Gemini CLI slash commands (wrappers)
+
+.continue/
+  prompts/          # Continue slash commands (wrappers)
+
+.vscode/
+  settings.json     # Load .cursor/skills in VS Code
+  extensions.json
 ```
 
 ## CLI
@@ -62,18 +77,32 @@ node .cursor/hooks/nam-cli.mjs claim --agent Agent_X
 node .cursor/hooks/nam-cli.mjs complete --agent Agent_X --log <path>
 node .cursor/hooks/nam-cli.mjs inbox list
 node .cursor/hooks/nam-cli.mjs inbox ack --all
+node .cursor/hooks/nam-cli.mjs doctor
+node .cursor/hooks/nam-cli.mjs handover register --agent Manager --file <numbered handover file>
+node .cursor/hooks/nam-cli.mjs handover accept --agent Manager
+node .cursor/hooks/nam-cli.mjs reconcile [--apply]
 ```
 
 ## Hooks
 
-Configured in `.cursor/hooks.json`:
+The same Node scripts in `.cursor/hooks/` run in Cursor, VS Code and Claude Code. Cursor wires them via `.cursor/hooks.json`, VS Code Copilot Chat via `.github/hooks/nam.json`, and Claude Code via `.claude/settings.json` (`SessionStart`, plus a `PreToolUse` hint that points `Grep`/`Glob` searches at `base ast query`).
 
 | Hook | Purpose |
 |------|---------|
-| `sessionStart` | Bind `NAM_CONVERSATION_ID`; inject queue / handover / inbox context |
-| `preCompact` | Mark pending handover under context pressure |
-| `stop` | Nudge full handover when eligible, else soft snapshot |
-| `subagentStop` | Close optional Implementation Task digressions (`[NAM_DISPATCH:…]`) |
+| `sessionStart` / `SessionStart` | Bind conversation id; inject queue / handover / inbox context |
+| `subagentStop` / `SubagentStop` | Close optional Implementation Task digressions (`[NAM_DISPATCH:…]`) |
+
+VS Code Copilot Chat does not set `NAM_CONVERSATION_ID` as an environment variable (Cursor does). Use the conversation / session id from the SessionStart context, or pass `--conversation` to `nam-cli`.
+
+## VS Code
+
+**GitHub Copilot Chat (closest to Cursor):** install the recommended Copilot extensions, open Agent chat, and run `/nam-manager` or `/nam-impl`. Prompt files live in `.github/prompts/`; they load the canonical prompts from `.cursor/commands/`. Hooks are Preview — if they do not fire, run `Chat: Open Customizations` and confirm the NAM hooks are loaded (`Developer: Show Agent Debug Logs`).
+
+**Continue:** install the Continue extension, open Agent mode (Ctrl+L), and type `/nam-manager` or `/nam-impl`. Prompt files live in `.continue/prompts/` and load the canonical prompts from `.cursor/commands/`. Continue does not run NAM lifecycle hooks. Pass `--conversation` to `nam-cli` (Continue does not set `NAM_CONVERSATION_ID`).
+
+**Gemini CLI:** project commands live in `.gemini/commands/`. In Gemini chat, run `/nam-manager`, `/nam-impl`, and the handover commands. Gemini does not run the NAM lifecycle hooks.
+
+The CLI, mailboxes, Memory Logs, and Implementation Plan are identical in every host.
 
 ## Guides
 
@@ -86,10 +115,22 @@ Configured in `.cursor/hooks.json`:
 | [Project_Breakdown_Guide.md](Guides/Project_Breakdown_Guide.md) | Setup → plan decomposition |
 | [Context_Synthesis_Guide.md](Guides/Context_Synthesis_Guide.md) | Discovery before breakdown |
 
+## Install into a project
+
+This repo is the NAM source. Copy NAM into a project with:
+
+```bash
+node .nam/Scripts/install.mjs --dest <project root> --dry-run   # preview
+node .nam/Scripts/install.mjs --dest <project root>
+```
+
+It copies the guides, commands, hooks and every host's prompt wrappers, merges NAM's hook entries into existing hook configs, and backs up each overwritten file to `<project>/.nam/tmp/backup-<date>/`. Project state (Mailbox, Memory, Runtime, Implementation Plan) is never touched, and neither is `.nam/Local/`, where a project keeps its own prompt add-ons (`.nam/Local/nam-manager.md` and so on). Then follow the base setup in `.nam/Guides/Automation_Guide.md` §10.
+
 ## Requirements
 
-- [Cursor](https://cursor.com) with project slash commands and hooks enabled
+- **Cursor**, or **VS Code** with GitHub Copilot Chat, Continue, or Gemini CLI
 - Node.js (for `nam-cli` and hook scripts)
+- [base](https://docs.basemode.ai/install) CLI on PATH for the code map, handoffs and forks. NAM still works without it but warns; check with `node .cursor/hooks/nam-cli.mjs doctor`.
 
 ## License
 

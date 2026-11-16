@@ -6,6 +6,8 @@ description: NAM 1.0 (Ninja Agent Manager) - Manager Handover
 
 # NAM 1.0 (Ninja Agent Manager) - Manager Agent Handover Prompt
 
+> **Project add-ons:** if `.nam/Local/nam-handover-manager.md` exists, read it after this prompt and follow it. It holds this project's own rules and wins where it conflicts with this prompt. The NAM installer never overwrites `.nam/Local/`.
+
 This prompt defines how Manager Agents execute handover procedures to transfer project coordination context to incoming Manager Agent instances when approaching context window limits.
 
 ---
@@ -56,6 +58,8 @@ Synthesize current project state by reviewing:
 Create Manager Handover File and Handover Prompt using templates in §4. Follow file organization in §5.
 
 **Disk pointer (required):** Also write the full Handover Prompt body to `.nam/Runtime/active_manager_handover.md` so the incoming Manager can load it without paste (see `.nam/Guides/Automation_Guide.md`). Clear role via `node .cursor/hooks/nam-cli.mjs role clear` after artifacts are written.
+
+**Register with base (required):** before `role clear`, run `node .cursor/hooks/nam-cli.mjs handover register --agent Manager --file .nam/Memory/Handovers/Manager_Agent_Handovers/Manager_Agent_Handover_File_<N>.md`. Always register the numbered Handover File, never the pointer. base then lists it at session start; a base failure comes back as a warning and never blocks the handover.
 
 ### Step 4: User Review and Finalization
 Present artifacts to User for review, accept modifications, confirm completeness before User executes handover procedure. Prefer showing the pointer path rather than requiring paste.

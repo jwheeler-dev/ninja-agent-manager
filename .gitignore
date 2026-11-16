@@ -13,3 +13,8 @@
 .DS_Store
 Thumbs.db
 *.log
+
+# base workspace state (local graph) and NAM scratch
+.base/
+.nam/tmp/
+.sandbox/

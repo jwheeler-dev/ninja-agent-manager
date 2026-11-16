@@ -61,6 +61,11 @@ Implementation Plan: **Task X.Y - [Title]** assigned to **[Agent_<Domain>]**
 [Only include if dependency_context: true]
 [Manager fills this section with section §4 content guidance]
 
+## Code Entry Points
+[Include when the task touches existing code. Entities the Manager found with `base ast query`, one per line:]
+- `ClassName.method` in `path/to/file.ext` - why it matters
+[The Implementation Agent starts from these with `base ast query --file <path>` or `--calls <name>`. Leave the section out for code that does not exist yet.]
+
 ## Objective
 [One-sentence task goal from Implementation Plan]
 

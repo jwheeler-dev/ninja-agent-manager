@@ -1,7 +1,11 @@
 #!/usr/bin/env node
 /**
  * sessionStart — set NAM_CONVERSATION_ID and inject pending disk context.
+ * Runs from Cursor (.cursor/hooks.json), VS Code Copilot (.github/hooks/nam.json)
+ * and Claude Code (.claude/settings.json).
  */
+import fs from "node:fs";
+import { baseDisabled, maybeAutosyncMap, preflight } from "./nam-base.mjs";
 import {
   emit,
   listPendingMailboxes,
@@ -16,8 +20,37 @@ import {
 const HANDOVER_POINTER = "active_manager_handover.md";
 const IMPL_HANDOVER_POINTER = "active_implementation_handover.md";
 
+/** Code-access guidance plus any base preflight warnings. Never throws. */
+function baseContext() {
+  if (baseDisabled()) return null;
+  let pf;
+  try {
+    pf = preflight();
+  } catch {
+    return null;
+  }
+  const lines = [
+    "## Code access (base)",
+    "",
+    "Find code through the base code map before grep or whole-file reads: `base ast query --file <path>`, `--contains <name>`, `--calls <fn>`, `--imports <path>`. Then read only the lines you need.",
+    "Grep is fine for strings, config, dot-directories (not in the map), or when base finds nothing or errors.",
+  ];
+  if (!pf.ok) {
+    lines.push(
+      "",
+      "base preflight warnings (NAM keeps working; fix when convenient):",
+      ...pf.warnings.map((w) => `- ${w}`),
+    );
+  }
+  if (maybeAutosyncMap(pf)) {
+    lines.push("", "The code map was over a day old, so a background `base sync --ast` was started.");
+  }
+  return lines.join("\n");
+}
+
 function buildContext(conversationId) {
   const parts = [];
+  const basePart = baseContext();
 
   if (conversationId) {
     parts.push(
@@ -118,7 +151,7 @@ function buildContext(conversationId) {
     }
   }
 
-  if (parts.length === 0) return null;
+  if (parts.length === 0) return basePart;
 
   const hasPendingWork =
     Boolean(managerHandover?.trim()) ||
@@ -127,7 +160,7 @@ function buildContext(conversationId) {
     (managerInbox?.entries || []).some((e) => !e.acked);
 
   if (!hasPendingWork && conversationId) {
-    return parts[0];
+    return [parts[0], basePart].filter(Boolean).join("\n\n");
   }
 
   return (
@@ -136,8 +169,23 @@ function buildContext(conversationId) {
       "",
       "Disk-backed NAM dispatch. Prefer CLI + disk over paste.",
       "",
-    ].join("\n") + parts.join("\n\n")
+    ].join("\n") + [...parts, basePart].filter(Boolean).join("\n\n")
   );
+}
+
+/**
+ * Claude Code ignores the hook's `env` output but sources CLAUDE_ENV_FILE
+ * into later Bash tool calls, so nam-cli finds NAM_CONVERSATION_ID there.
+ */
+function exportForClaudeCode(conversationId) {
+  const file = process.env.CLAUDE_ENV_FILE;
+  if (!file || !conversationId) return;
+  try {
+    const safe = String(conversationId).replace(/'/g, "");
+    fs.appendFileSync(file, `export NAM_CONVERSATION_ID='${safe}'\n`, "utf8");
+  } catch {
+    // best effort
+  }
 }
 
 const input = normalizeHookInput(await readStdin().catch(() => ({})));
@@ -146,6 +194,7 @@ const conversationId = resolveConversationId(input);
 const out = {};
 if (conversationId) {
   out.env = { NAM_CONVERSATION_ID: conversationId };
+  exportForClaudeCode(conversationId);
 }
 
 const additional_context = buildContext(conversationId);

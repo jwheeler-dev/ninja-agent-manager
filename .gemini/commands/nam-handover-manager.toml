@@ -1,0 +1,14 @@
+description = "NAM 1.0 (Ninja Agent Manager) - Manager Handover"
+
+prompt = """
+You are running a NAM Manager handover.
+
+Read and follow in full the handover prompt below.
+
+@{.cursor/commands/nam-handover-manager.md}
+
+Follow `.nam/Guides/Automation_Guide.md` section 5 (disk pointer + role clear).
+Prefer `node .cursor/hooks/nam-cli.mjs` for role and handover mutations.
+
+Do not summarize or skip the handover prompt. Execute it.
+"""
