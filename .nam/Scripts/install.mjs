@@ -124,6 +124,88 @@ function mergeClaudeSettings(dest, src) {
   return out;
 }
 
+const GITIGNORE_BEGIN = "# >>> NAM (Ninja Agent Manager): managed by .nam/Scripts/install.mjs, edits inside are replaced";
+const GITIGNORE_END = "# <<< NAM";
+/** NAM is installed from its source repo, never committed in a project; base state is local. */
+const GITIGNORE_RULES = [
+  ".nam/",
+  ".cursor/commands/nam-*",
+  ".cursor/hooks/nam-*",
+  ".cursor/hooks.json",
+  ".cursor/skills/nam-migration/",
+  ".claude/commands/nam-*",
+  ".claude/agents/nam-*",
+  ".claude/settings.json",
+  ".github/prompts/nam-*",
+  ".github/hooks/nam.json",
+  ".continue/prompts/nam-*",
+  ".gemini/commands/nam-*",
+  ".base/",
+  ".base-ast/",
+  ".base-ast-cache/",
+  ".base-semantic-cache",
+];
+const OLD_NAM_COMMENT = "# NAM local / ephemeral state (do not publish project runs)";
+/** Folder-wide rules that also hide a project's own files (Cursor rules, Claude commands, CI). */
+const BROAD_RULE = /^\/?\.(cursor|claude|github)\/?$/;
+
+/**
+ * Keep one managed NAM block in the project's .gitignore. Lines elsewhere that
+ * the block makes redundant (exact duplicates, old `.nam/...` state rules) are
+ * removed; folder-wide rules are reported, not changed. NAM files git still
+ * tracks are reported with the command that untracks them (never run here).
+ */
+function updateGitignore(dest, args, backup, report) {
+  if (!fs.existsSync(path.join(dest, ".git"))) return;
+  const rel = ".gitignore";
+  const file = path.join(dest, rel);
+  const raw = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "";
+  const eol = raw.includes("\r\n") ? "\r\n" : "\n";
+  const lines = raw.replace(/\r\n/g, "\n").split("\n");
+
+  const begin = lines.indexOf(GITIGNORE_BEGIN);
+  const end = begin >= 0 ? lines.indexOf(GITIGNORE_END, begin) : -1;
+  const outside = begin >= 0 && end > begin ? [...lines.slice(0, begin), ...lines.slice(end + 1)] : lines;
+
+  const managed = new Set(GITIGNORE_RULES);
+  const kept = outside.filter((l) => {
+    const t = l.trim();
+    if (managed.has(t) || t === OLD_NAM_COMMENT) return false;
+    if (/^!?\/?\.nam\//.test(t)) return false; // covered by `.nam/`
+    return true;
+  });
+  while (kept.length && !kept[kept.length - 1].trim()) kept.pop();
+  const block = [GITIGNORE_BEGIN, ...GITIGNORE_RULES, GITIGNORE_END];
+  const next = [...kept, ...(kept.length ? [""] : []), ...block, ""].join("\n");
+
+  if (next === lines.join("\n")) {
+    report.unchanged.push(rel);
+  } else {
+    if (raw) backup(rel);
+    if (!args.dryRun) fs.writeFileSync(file, next.replace(/\n/g, eol), "utf8");
+    const removed = outside.filter((l) => l.trim()).length - kept.filter((l) => l.trim()).length;
+    report.merged.push(`${rel} (NAM block${removed ? `; ${removed} redundant line(s) removed` : ""})`);
+  }
+
+  for (const l of kept) {
+    if (BROAD_RULE.test(l.trim())) {
+      report.warnings.push(`.gitignore: \`${l.trim()}\` also hides this project's own files there; NAM needs only the managed block`);
+    }
+  }
+
+  const tracked = spawnSync(
+    "git",
+    ["ls-files", "--cached", "--ignored", ...GITIGNORE_RULES.flatMap((r) => ["-x", r])],
+    { cwd: dest, encoding: "utf8", env: { ...process.env }, timeout: 15000 },
+  );
+  const files = (tracked.stdout || "").split(/\r?\n/).filter(Boolean);
+  if (files.length) {
+    report.warnings.push(
+      `${files.length} NAM file(s) are still tracked by git here. To untrack (files stay on disk): git rm -r --cached -- ${[...new Set(files.map((f) => (f.startsWith(".nam/") ? ".nam" : f)))].join(" ")}`,
+    );
+  }
+}
+
 function main() {
   const args = parseArgs(process.argv.slice(2));
   if (args.help || !args.dest) {
@@ -142,7 +224,7 @@ function main() {
   }
 
   const backupRoot = path.join(dest, ".nam", "tmp", `backup-${today()}`);
-  const report = { added: [], updated: [], unchanged: [], merged: [], stale: [] };
+  const report = { added: [], updated: [], unchanged: [], merged: [], stale: [], warnings: [] };
   const backup = (rel) => {
     const from = path.join(dest, rel);
     const to = path.join(backupRoot, rel);
@@ -219,6 +301,8 @@ function main() {
       (destMeta ? report.updated : report.added).push(`${rel} (v${srcMeta.version}, ${commit})`);
     }
   }
+
+  updateGitignore(dest, args, backup, report);
 
   // NAM files in dest that the source no longer ships: report, never delete.
   const shipped = new Set(files);
