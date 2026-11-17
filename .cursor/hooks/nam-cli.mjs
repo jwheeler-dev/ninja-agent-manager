@@ -46,6 +46,7 @@ import {
   registerHandoff,
   toProjectRel,
 } from "./nam-base.mjs";
+import { ponytailStatus } from "./nam-ponytail.mjs";
 
 function usage(code = 1) {
   const text = `NAM CLI
@@ -69,13 +70,15 @@ Commands:
   inbox list
   inbox ack --all | --task-ref TEXT
 
-  doctor                         base preflight (exit 1 if a check fails)
+  doctor                         base preflight (exit 1 if a check fails) + ponytail check (warn-only)
   handover register --agent Manager|Agent_X --file <numbered handover file>
   handover accept --agent Manager|Agent_X
   reconcile [--apply]            sync base forks/handoffs with NAM state (dry run by default)
 
 base is used by default and never blocks NAM: failures come back as warnings
 in the "base" field. NAM_BASE=off skips base entirely.
+doctor also reports ponytail (coding discipline) in its "ponytail" field; it
+never changes the exit code. NAM_PONYTAIL=off skips that check.
 `;
   process.stderr.write(text);
   process.exit(code);
@@ -349,7 +352,8 @@ async function cmdInbox(args) {
 
 async function cmdDoctor() {
   const pf = preflight({ force: true });
-  printJson(pf);
+  // ponytail is warn-only: it never affects the exit code.
+  printJson({ ...pf, ponytail: ponytailStatus() });
   if (!pf.ok) process.exitCode = 1;
 }
 

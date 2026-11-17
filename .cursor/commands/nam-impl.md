@@ -198,6 +198,14 @@ When a TAP, Jira ticket, or User report includes a **Firestore Session ID**, **p
 - Optionally spawn a Cursor **Task** subagent (`explore` / `generalPurpose`) for a noisy digression that would bloat this chat — then fold findings back here and continue.
 - Document material research outcomes in the Memory Log.
 
+### Code discipline (ponytail)
+When ponytail is active (Claude Code plugin, or the Cursor rule `.cursor/rules/ponytail.mdc`), follow it for **how** you write code; the TAP decides **what** you build.
+- ponytail never drops TAP deliverables, acceptance criteria, tests the TAP asks for, validation, error handling, security or accessibility. Its "one small test" is a floor, not a cap. If the TAP names a ponytail level, work at that level.
+- Its "grep every caller" step starts with `base ast query --calls <fn>` (Code access above).
+- A `shortcut:` comment names the limit and when to upgrade in technical terms, never a task or ticket ID (§8).
+- Put its "skipped / not checked / risks" lines under the Memory Log's **Issues** and the Completion Summary's **Risks / residuals**. List every `shortcut:` comment you added under the Memory Log's **Shortcuts** (`path:line`, limit, when to revisit).
+- Without ponytail (other hosts), work as before; the Memory Log sections still apply.
+
 ### Debug attempt limit
 **CRITICAL:** You are **PROHIBITED** from making more than **3 debugging attempts** for the same issue without escalating.
 

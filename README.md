@@ -40,6 +40,7 @@ Research and debug live in `/nam-impl`. There are no separate ad-hoc / research 
   Memory/           # Memory Logs and handovers
   Runtime/          # Roles, inbox, dispatch state
   Scripts/          # Export and maintenance helpers
+  Vendor/ponytail/  # Source, tag and license of the vendored ponytail rule
   Implementation_Plan.md
   metadata.json
   README.md
@@ -48,6 +49,7 @@ Research and debug live in `/nam-impl`. There are no separate ad-hoc / research 
   commands/         # Canonical nam-*.md slash-command prompts
   hooks/            # nam-cli, nam-lib, session/subagent hooks
   hooks.json        # Cursor lifecycle wiring
+  rules/            # ponytail.mdc: ponytail coding discipline for Cursor (always on)
   skills/           # Agent skills (also loaded by VS Code)
 
 .github/
@@ -124,13 +126,14 @@ node .nam/Scripts/install.mjs --dest <project root> --dry-run   # preview
 node .nam/Scripts/install.mjs --dest <project root>
 ```
 
-It copies the guides, commands, hooks and every host's prompt wrappers, merges NAM's hook entries into existing hook configs, and backs up each overwritten file to `<project>/.nam/tmp/backup-<date>/`. Project state (Mailbox, Memory, Runtime, Implementation Plan) is never touched, and neither is `.nam/Local/`, where a project keeps its own prompt add-ons (`.nam/Local/nam-manager.md` and so on). Then follow the base setup in `.nam/Guides/Automation_Guide.md` §10.
+It copies the guides, commands, hooks and every host's prompt wrappers, merges NAM's hook entries into existing hook configs, and backs up each overwritten file to `<project>/.nam/tmp/backup-<date>/`. Project state (Mailbox, Memory, Runtime, Implementation Plan) is never touched, and neither is `.nam/Local/`, where a project keeps its own prompt add-ons (`.nam/Local/nam-manager.md` and so on). Then follow the base setup in `.nam/Guides/Automation_Guide.md` §10, and the ponytail setup in §11.
 
 ## Requirements
 
 - **Cursor**, or **VS Code** with GitHub Copilot Chat, Continue, or Gemini CLI
 - Node.js (for `nam-cli` and hook scripts)
 - [base](https://docs.basemode.ai/install) CLI on PATH for the code map, handoffs and forks. NAM still works without it but warns; check with `node .cursor/hooks/nam-cli.mjs doctor`.
+- [ponytail](https://github.com/DietrichGebert/ponytail) for coding discipline: the Claude Code plugin (`/plugin marketplace add DietrichGebert/ponytail`, then `/plugin install ponytail@ponytail`); the installer adds its Cursor rule. Implementation agents follow it within the TAP's scope and the Manager reviews with `/ponytail-review` before acking. Optional and warn-only, like base: `doctor` reports it, `NAM_PONYTAIL=off` skips the check.
 
 ## License
 

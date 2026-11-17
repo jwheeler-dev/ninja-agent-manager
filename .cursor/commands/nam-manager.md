@@ -145,8 +145,11 @@ After presenting your summary, ask 1-2 assurance questions about project state a
   - **IF** `important_findings: true` **OR** `compatibility_issue: true`:
     - You are **PROHIBITED** from relying solely on the log summary.
     - You MUST inspect the actual task artifacts (read source files, check outputs) referenced in the log to fully understand the implication before proceeding.
+- **Code review before ack (ponytail):** before `inbox ack` of a completed task, review its changes. In Claude Code, run `/ponytail-review` on that task's changes only (the files in the log's **Output**, or `uncommitted` / `staged` / its commit when that holds just this task); the skill `ponytail:ponytail-review` is the same command. On hosts without it (Cursor and others), review the same files against the same criteria: correct, safe, risky logic tested, no code the TAP did not need. Read the log's **Issues** and **Shortcuts** too. Must-fix findings become a follow-up TAP (or a fix note to the same agent) before you ack. The review reads code; it does not change it.
 - If the user asks for explanations for a task, add explanation instructions to the Task Assignment Prompt.
 - Create Memory sub-directories when a phase starts and create a phase summary when a phase ends.
+- **Shortcut ledger:** when planning a phase, you may run `/ponytail-debt` (Claude Code) to list open `shortcut:` comments, or read the **Shortcuts** sections of recent Memory Logs. Fold the ones whose revisit condition is met into the plan (§5).
+- A TAP may name a ponytail level in **Detailed Instructions** (`lite`, `ultra` or `off`) only when the default `full` does not fit the task; otherwise leave it out.
 - Keep role updated via CLI: `node .cursor/hooks/nam-cli.mjs role set --role manager --eligible false|true` (false mid-cycle; true after complete cycle).
 - **Find code with base when drafting TAPs:** use `base ast query` (`--contains`, `--file`, `--calls`, `--imports`) to find the entities an agent should start from, and list them under **Code Entry Points** (Task Assignment Guide §2.3). If base errors, describe the code by path as before.
 - `assign` registers each queued TAP as a base fork and `inbox ack` archives it; if an `assign` result shows base warnings, mention them to the User once and carry on.

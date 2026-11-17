@@ -6,6 +6,7 @@
  */
 import fs from "node:fs";
 import { baseDisabled, maybeAutosyncMap, preflight } from "./nam-base.mjs";
+import { ponytailDisabled, ponytailStatus } from "./nam-ponytail.mjs";
 import {
   emit,
   listPendingMailboxes,
@@ -48,9 +49,41 @@ function baseContext() {
   return lines.join("\n");
 }
 
-function buildContext(conversationId) {
+/** The host running this hook: "claude_code", "cursor", or null (VS Code Copilot, manual run). */
+function hookHost(input) {
+  if (process.env.CLAUDE_ENV_FILE || process.env.CLAUDE_PROJECT_DIR) return "claude_code";
+  if (input.cursor_version || process.env.CURSOR_PROJECT_DIR) return "cursor";
+  return null;
+}
+
+/** This host's ponytail warnings, plus the NAM contract where ponytail is active. Never throws. */
+function ponytailContext(host) {
+  if (ponytailDisabled()) return null;
+  const st = ponytailStatus();
+  const warnings = st.warnings.filter((w) => !host || w.startsWith(`${host}:`));
+  const cc = st.hosts?.claude_code?.enabled;
+  const cursor = st.hosts?.cursor?.rule;
+  const active = host === "claude_code" ? cc : host === "cursor" ? cursor : cc || cursor;
+  if (!active && !warnings.length) return null;
+  const lines = ["## Code discipline (ponytail)", ""];
+  if (active) {
+    lines.push(
+      "The TAP decides what to build, ponytail how little code: never drop TAP deliverables, acceptance criteria, requested tests, validation, security or accessibility. Skipped / not checked / risks go under the Memory Log's Issues, `shortcut:` comments under Shortcuts.",
+    );
+  }
+  if (warnings.length) {
+    lines.push(
+      ...(active ? [""] : []),
+      "ponytail warnings (NAM keeps working; fix when convenient):",
+      ...warnings.map((w) => `- ${w}`),
+    );
+  }
+  return lines.join("\n");
+}
+
+function buildContext(conversationId, host) {
   const parts = [];
-  const basePart = baseContext();
+  const toolsPart = [baseContext(), ponytailContext(host)].filter(Boolean).join("\n\n") || null;
 
   if (conversationId) {
     parts.push(
@@ -151,7 +184,7 @@ function buildContext(conversationId) {
     }
   }
 
-  if (parts.length === 0) return basePart;
+  if (parts.length === 0) return toolsPart;
 
   const hasPendingWork =
     Boolean(managerHandover?.trim()) ||
@@ -160,7 +193,7 @@ function buildContext(conversationId) {
     (managerInbox?.entries || []).some((e) => !e.acked);
 
   if (!hasPendingWork && conversationId) {
-    return [parts[0], basePart].filter(Boolean).join("\n\n");
+    return [parts[0], toolsPart].filter(Boolean).join("\n\n");
   }
 
   return (
@@ -169,7 +202,7 @@ function buildContext(conversationId) {
       "",
       "Disk-backed NAM dispatch. Prefer CLI + disk over paste.",
       "",
-    ].join("\n") + [...parts, basePart].filter(Boolean).join("\n\n")
+    ].join("\n") + [...parts, toolsPart].filter(Boolean).join("\n\n")
   );
 }
 
@@ -197,7 +230,7 @@ if (conversationId) {
   exportForClaudeCode(conversationId);
 }
 
-const additional_context = buildContext(conversationId);
+const additional_context = buildContext(conversationId, hookHost(input));
 if (additional_context) out.additional_context = additional_context;
 
 emit(out, "SessionStart");

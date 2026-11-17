@@ -162,7 +162,7 @@ Same pattern with `/nam-handover-impl` → `.nam/Runtime/active_implementation_h
 
 | Hook | Behavior |
 |------|----------|
-| `sessionStart` / `SessionStart` | Sets conversation id (Cursor: env `NAM_CONVERSATION_ID`; Claude Code: `CLAUDE_ENV_FILE`; VS Code: session context); injects queue / handover / inbox and the base code-access block |
+| `sessionStart` / `SessionStart` | Sets conversation id (Cursor: env `NAM_CONVERSATION_ID`; Claude Code: `CLAUDE_ENV_FILE`; VS Code: session context); injects queue / handover / inbox, the base code-access block and the ponytail block (§11) |
 | `subagentStop` / `SubagentStop` | Closes optional Impl Task digressions (`[NAM_DISPATCH:…]`). Cursor matches the Task description; VS Code may only surface a `systemMessage` unless the dispatch id is in the subagent payload. |
 
 Claude Code runs `SessionStart` and `nam-search-hint.mjs` as a `PreToolUse` hook on `Grep|Glob` (see §10). It does not run `SubagentStop`: that payload carries no Task description, so `[NAM_DISPATCH:…]` could never match. Gemini CLI and Continue do not run these hooks. Use `/nam-handover-*` when the User wants a new chat.
@@ -224,7 +224,7 @@ node .cursor/hooks/nam-cli.mjs reconcile --apply         # forks for tasks alrea
 | `handover accept` | Archives the lane's handoff and empties its pointer file |
 | `reconcile [--apply]` | Dry run by default. Backfills missing forks; archives forks of acked or cancelled items, and handoffs whose pointer moved on |
 | `sessionStart` | Adds the code-access block and any preflight warnings. Starts a background `base sync --ast` when the map is over a day old (Cursor has no base hook to refresh it) |
-| Claude Code `Grep` / `Glob` | `nam-search-hint.mjs` adds a `base ast query` hint before the search runs. Advisory only; silent for docs, config and dot-directories, or when no map exists. base's own hook covers shell grep, rg, find and PowerShell `Select-String`, but not these built-in tools |
+| Claude Code `Grep` / `Glob` | `nam-search-hint.mjs` adds a `base ast query` hint before the search runs. Advisory only; silent for docs and config, when no map exists, and when the map holds no code file under the searched folder or matching the glob's extension (dot-directories included, since base's map skips them). It caches the map's code-file list in `.nam/Runtime/base_map_files.json` and rebuilds it when the map changes. base's own hook covers shell grep, rg, find and PowerShell `Select-String`, but not these built-in tools |
 
 **Code access:** agents run `base ast query` (`--file`, `--contains`, `--calls`, `--imports`) before grep or whole-file reads, then read only the lines they need. The map skips dot-directories, so NAM's own files are found with grep.
 
@@ -234,7 +234,34 @@ node .cursor/hooks/nam-cli.mjs reconcile --apply         # forks for tasks alrea
 
 ---
 
-## 11. Project add-ons (`.nam/Local/`)
+## 11. ponytail integration
+
+[ponytail](https://github.com/DietrichGebert/ponytail) (MIT) is a coding-discipline ruleset. Before writing code the agent takes the first option that works: does it need to exist, already in the codebase, standard library or platform feature, an installed dependency, one line, else the minimum that works plus one small test for new logic. It never cuts validation, error handling, security or accessibility, ends each reply with what it skipped or did not check and the risks, and marks deliberate shortcuts with `shortcut: <limit>, <when to upgrade>` comments. Like base it is **warn-only**: when ponytail is missing NAM says so and keeps working. `NAM_PONYTAIL=off` skips the check.
+
+**Install, per host:**
+
+| Host | What ponytail adds | Install |
+|------|--------------------|---------|
+| Claude Code | Plugin: the ruleset in every session and subagent (including `nam-implementer`), plus `/ponytail [lite\|full\|ultra\|off]`, `/ponytail-review`, `/ponytail-audit`, `/ponytail-debt` | Once per user: `/plugin marketplace add DietrichGebert/ponytail`, then `/plugin install ponytail@ponytail` |
+| Cursor | The always-on rule `.cursor/rules/ponytail.mdc`; no commands | The NAM installer copies it into each project (pinned tag, vendored at `.nam/Vendor/ponytail/`) and gitignores it in the managed block |
+| VS Code Copilot Chat, Continue | Nothing: not wired | Copilot Chat would need `.github/copilot-instructions.md`, a product file NAM does not write |
+| Gemini CLI | Not wired by NAM | `gemini extensions install https://github.com/DietrichGebert/ponytail` |
+
+**What NAM checks:** `doctor` reports a `ponytail` field and never changes its exit code for it: the Claude Code plugin is installed (`~/.claude/plugins/installed_plugins.json`) and enabled (`enabledPlugins` in user, project or local settings), the project has `.cursor/rules/ponytail.mdc`, and, for information only, whether `~/.cursor/hooks.json` has ponytail's Cursor hooks. `sessionStart` adds the warnings for the host it runs in, and one line restating the contract below where ponytail is active.
+
+**Contract:**
+
+- The TAP decides **what** to build; ponytail decides **how little code**. It never drops TAP deliverables, acceptance criteria, tests the TAP asks for, validation, security or accessibility.
+- Implementation agents put ponytail's skipped / not checked / risks under the Memory Log's **Issues** and list each `shortcut:` comment they added under **Shortcuts** (`path:line`, limit, when to revisit). Shortcut comments carry no task or ticket IDs.
+- Before `inbox ack`, the Manager runs `/ponytail-review` on that task's changes (Claude Code), or reviews them against the same criteria elsewhere. Must-fix findings become a follow-up TAP or a fix note first.
+- When planning a phase, the Manager may run `/ponytail-debt` (Claude Code) and fold shortcuts that are due into the plan.
+- A TAP names a ponytail level (`lite`, `ultra`, `off`) only when the default `full` does not fit.
+
+To move to a newer ponytail tag, follow `.nam/Vendor/ponytail/README.md`.
+
+---
+
+## 12. Project add-ons (`.nam/Local/`)
 
 Project-specific rules live outside the shared prompts so a NAM upgrade never overwrites them. Each command prompt tells the agent to read `.nam/Local/<command>.md` (for example `.nam/Local/nam-manager.md`) when it exists and to follow it; it wins where it conflicts with the shared prompt.
 

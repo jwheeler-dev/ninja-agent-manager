@@ -47,7 +47,10 @@ important_findings: [true|false]
 - Results or deliverables
 
 ## Issues
-[Specific blockers or errors, include error messages if relevant, or "None"]
+[Specific blockers or errors, include error messages if relevant, or "None". Add what you skipped or did not check and known risks (ponytail's closing lines).]
+
+## Shortcuts
+[Each `shortcut:` code comment added in this task: `path:line` - the limit - when to revisit. Or "None"]
 
 ## Compatibility Concerns
 [Only include this section if compatibility_issues: true]
@@ -111,6 +114,7 @@ When logging blockers or errors:
 - Provide actionable information for the Manager Agent
 - Include error messages or diagnostic info
 - Suggest potential solutions if possible
+- Also list, even on success, what you skipped or did not check and any risk the Manager must know (with ponytail, its closing lines). Deliberate `shortcut:` comments go under **Shortcuts**, not Issues.
 
 ### 5.4. Product deliverables vs NAM artifacts
 Memory Logs **may** reference phase/task/bug/ticket IDs for coordination. Application source, comments, tests, and operator/user-facing docs **must not** - see Implementation Agent Operating Rules. When summarizing code changes in the log, quote technical behavior, not ticket labels from the product tree.
@@ -146,6 +150,9 @@ Implemented POST /api/users endpoint with input validation and fixed CORS issues
 - Key validation logic added for email format, password length, and required name field
 
 ## Issues
+None
+
+## Shortcuts
 None
 
 ## Next Steps
