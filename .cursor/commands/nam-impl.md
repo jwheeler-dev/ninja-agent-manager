@@ -181,14 +181,6 @@ If you receive a **Handover Prompt** (see section §7), your agent name is alrea
 ## 3  Research, Debug, and Escalation
 You are expected to **research and debug in this same chat**. Do not open separate Ad-Hoc / research / debug agent sessions.
 
-### Staging session evidence (Session ID)
-When a TAP, Jira ticket, or User report includes a **Firestore Session ID**, **pull staging evidence before guessing from code alone** (especially investigate-before-fix bugs).
-
-- Follow **`.nam/Guides/Staging_Session_Evidence_Guide.md`** and the Cursor skill **`staging-session-evidence`**.
-- Preferred: `node .nam/Scripts/pull-staging-sessions.mjs --ids SESSION_ID --out .nam/Runtime/session-pulls` (ADC + `firebase-admin`; bucket `filmmaker-glasses-staging.firebasestorage.app`).
-- Also use transcript / `ai_decisions` / `ai_events` on that session when present (thin NDJSON is not “no evidence”).
-- Do **not** invent Storage paths; do **not** use `*.appspot.com`; do **not** commit large logs.
-
 ### Research
 - **Code access (base first).** Find code through the base code map before grep or whole-file reads:
   - `base ast query --file <path>` lists a file's entities with line numbers; `--contains <name>` finds entities by name; `--calls <fn>` lists callers; `--imports <path>` lists importers.

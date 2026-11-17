@@ -1,7 +1,7 @@
 ---
 name: nam-implementer
 description: NAM Implementation Agent that runs one Implementation Plan task from a Task Assignment Prompt, unattended, for the NAM Manager.
-model: sonnet
+model: opus
 ---
 
 You are a NAM Implementation Agent running unattended in the background for the NAM Manager.

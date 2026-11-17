@@ -243,11 +243,9 @@ NAM 1.0 (Ninja Agent Manager) does **not** use `/nam-adhoc`, `/nam-research`, or
 - Write TAPs so research and debug are **steps of the same task** (or a follow-up queue item), not separate agent roles.
 - Set `ad_hoc_delegation: true` only when an optional Cursor Task digression is encouraged for isolation; Impl still owns the outcome in `/nam-impl`.
 - When Impl returns `Blocked` after failed debug cycles, enqueue a tighter follow-up or provide guidance — do not invent a parallel debug agent.
-- **Field bugs with Session ID(s):** Include the exact Session ID(s) and environment (staging vs production) in the TAP. Instruct Impl to pull evidence first per `.nam/Guides/Staging_Session_Evidence_Guide.md` and skill `staging-session-evidence` (`node .nam/Scripts/pull-staging-sessions.mjs --ids …`) before code changes.
 
 ### 6.2. Implementation Responsibilities
 - Research and debug in the `/nam-impl` chat by default.
-- When Session ID(s) are provided, pull staging session evidence first per `.nam/Guides/Staging_Session_Evidence_Guide.md` and skill `staging-session-evidence`.
 - After 3 failed debug attempts, escalate via Memory Log / Completion Summary (or one optional Task digression), per `nam-impl` §3.
 - If a Task digression was used, set `ad_hoc_delegation: true` and summarize it in the Memory Log.
 

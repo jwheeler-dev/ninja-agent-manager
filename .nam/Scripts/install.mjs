@@ -84,6 +84,17 @@ function dirtyProductFiles() {
   return r.stdout.split(/\r?\n/).filter(Boolean);
 }
 
+/** True if this repo's history ever had `rel`; a file it never had is the project's own. */
+function everShipped(rel) {
+  const r = spawnSync("git", ["log", "-1", "--format=%h", "--all", "--", rel], {
+    cwd: SRC,
+    encoding: "utf8",
+    env: { ...process.env },
+    timeout: 15000,
+  });
+  return r.status !== 0 || Boolean(r.stdout.trim()); // can't tell: report it
+}
+
 function today() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -307,14 +318,15 @@ function main() {
 
   updateGitignore(dest, args, backup, report);
 
-  // NAM files in dest that the source no longer ships: report, never delete.
+  // NAM files in dest that the source once shipped but no longer does: report, never delete.
+  // Files the source never had (a project's own guide in .nam/Guides) are left alone.
   const shipped = new Set(files);
   for (const [dir, keep] of COPY) {
     const abs = path.join(dest, dir);
     if (!fs.existsSync(abs)) continue;
     for (const name of fs.readdirSync(abs)) {
       const rel = `${dir}/${name}`;
-      if (keep(name) && !shipped.has(rel) && fs.statSync(path.join(abs, name)).isFile()) {
+      if (keep(name) && !shipped.has(rel) && fs.statSync(path.join(abs, name)).isFile() && everShipped(rel)) {
         report.stale.push(rel);
       }
     }

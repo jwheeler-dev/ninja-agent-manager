@@ -1,6 +1,6 @@
 {
   "edition": "NAM 1.0 (Ninja Agent Manager)",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "basedOn": "In-repo Ninja Agent Manager",
   "customizations": [
     "Ninja Agent Manager (NAM) — queue-based agent orchestration",
@@ -18,7 +18,7 @@
     "No phase/task/bug IDs in product code or docs",
     "base CLI integration: code map preflight (nam-cli doctor), handoffs, forks, reconcile (warn-only)",
     "Claude Code hooks (.claude/settings.json: SessionStart, PreToolUse Grep|Glob hint, silent outside the code map's coverage)",
-    "Per-project prompt add-ons in .nam/Local/",
+    "Per-project prompt add-ons in .nam/Local/; project-owned files in NAM folders are not reported stale",
     "Installer (.nam/Scripts/install.mjs) replaces export.mjs; this repo is the source",
     "Installer keeps a managed NAM block in each project .gitignore",
     "ponytail coding discipline: Cursor rule vendored at v5.3.3 and installed per project, Claude Code plugin check (nam-cli doctor, sessionStart; warn-only), Manager review before ack, shortcut ledger in Memory Logs"

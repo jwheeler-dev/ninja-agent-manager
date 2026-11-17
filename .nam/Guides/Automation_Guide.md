@@ -267,6 +267,8 @@ Project-specific rules live outside the shared prompts so a NAM upgrade never ov
 
 Typical add-ons: notification rules (`nam-notify.mjs`), background execution with the `nam-implementer` subagent, and product-specific how-tos for Implementation agents. `install.mjs` never writes to `.nam/Local/`.
 
+An add-on may point to the project's own files, such as a guide in `.nam/Guides/` or a script in `.nam/Scripts/`. The installer leaves a file alone when this source repo never shipped it, and reports a file as stale only when NAM shipped it once and has since dropped it.
+
 ---
 
 **End of Guide**
