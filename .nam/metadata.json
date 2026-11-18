@@ -1,6 +1,6 @@
 {
   "edition": "NAM 1.0 (Ninja Agent Manager)",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "basedOn": "In-repo Ninja Agent Manager",
   "customizations": [
     "Ninja Agent Manager (NAM) — queue-based agent orchestration",

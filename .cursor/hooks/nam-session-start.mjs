@@ -35,6 +35,7 @@ function baseContext() {
     "",
     "Find code through the base code map before grep or whole-file reads: `base ast query --file <path>`, `--contains <name>`, `--calls <fn>`, `--imports <path>`. Then read only the lines you need.",
     "Grep is fine for strings, config, dot-directories (not in the map), or when base finds nothing or errors.",
+    "File base decisions, notes and rules under this project's own domain (its `name` in `.base/domains.toml`), never `nam`.",
   ];
   if (!pf.ok) {
     lines.push(
