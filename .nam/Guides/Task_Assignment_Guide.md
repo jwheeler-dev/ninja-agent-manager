@@ -81,14 +81,8 @@ Implementation Plan: **Task X.Y - [Title]** assigned to **[Agent_<Domain>]**
 - Success criteria: [clear completion definition]
 - File locations: [specific paths for created/modified files]
 
-## Memory Logging
-Upon completion, you **MUST** log work in: `[memory_log_path]`
-Follow .nam/Guides/Memory_Log_Guide.md instructions.
-
-## Reporting Protocol
-After logging, you **MUST** complete the **Completion Summary** in `.cursor/commands/nam-impl.md` (problem/goal, what changed, files touched, verification, risks, flags, Memory Log path) **and** append/complete via `nam-cli` per Automation Guide.
-- **Do not** shrink the User-facing summary to a short blurb.
-- **Do not** require a User-POV copy-paste block for the Manager.
+## Memory Logging and Reporting
+Log your work in `[memory_log_path]`, run `nam-cli complete`, and give your completion summary, all as your agent instructions describe.
 
 ## Optional Task Digression
 [Only include if ad_hoc_delegation: true]

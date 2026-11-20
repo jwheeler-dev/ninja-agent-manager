@@ -51,10 +51,10 @@ node .cursor/hooks/nam-cli.mjs role clear
 ```bash
 node .cursor/hooks/nam-cli.mjs status
 node .cursor/hooks/nam-cli.mjs assign --agent Agent_X --task-ref "Task X.Y - Title" --log <memory_log_path> --file tap.md
-node .cursor/hooks/nam-cli.mjs queue list --agent Agent_X
+node .cursor/hooks/nam-cli.mjs queue list --agent Agent_X [--all]   # open items; --all adds completed
 node .cursor/hooks/nam-cli.mjs claim --agent Agent_X
 node .cursor/hooks/nam-cli.mjs complete --agent Agent_X --log <path> [--notes TEXT]
-node .cursor/hooks/nam-cli.mjs inbox list
+node .cursor/hooks/nam-cli.mjs inbox list [--all]                   # unread entries; --all adds acked
 node .cursor/hooks/nam-cli.mjs inbox ack --all
 node .cursor/hooks/nam-cli.mjs doctor
 node .cursor/hooks/nam-cli.mjs handover register --agent Manager|Agent_X --file <numbered handover file>
@@ -115,8 +115,8 @@ If more items are pending, tell the User the next queue depth; claim the next it
 
 Same as before:
 
-1. Read `.nam/Runtime/manager_inbox.json` (`acked: false`) or User notice with log path.
-2. Review Memory Log (and artifacts if flags true).
+1. Run `inbox list` (it prints unread entries only), or take the log path from the User or a subagent's reply.
+2. Review the Memory Log (and artifacts if flags are true), and have the code reviewed (§11).
 3. `inbox ack --task-ref "..."` or `--all`.
 4. Enqueue next task(s) when ready.
 
@@ -171,8 +171,8 @@ Claude Code runs `SessionStart` and `nam-search-hint.mjs` as a `PreToolUse` hook
 
 ## 8. Manager inbox review
 
-1. Read `.nam/Runtime/manager_inbox.json`.
-2. For each `acked: false` entry, read `memory_log_path` and review per Memory Log Guide.
+1. Run `node .cursor/hooks/nam-cli.mjs inbox list` (unread entries only; `--all` adds acked ones).
+2. For each entry, read `memory_log_path` and review per Memory Log Guide.
 3. Ack via CLI.
 4. Continue the Task Loop - **enqueue** next work (do not auto-execute).
 
@@ -253,7 +253,7 @@ node .cursor/hooks/nam-cli.mjs reconcile --apply         # forks for tasks alrea
 
 - The TAP decides **what** to build; ponytail decides **how little code**. It never drops TAP deliverables, acceptance criteria, tests the TAP asks for, validation, security or accessibility.
 - Implementation agents put ponytail's skipped / not checked / risks under the Memory Log's **Issues** and list each `shortcut:` comment they added under **Shortcuts** (`path:line`, limit, when to revisit). Shortcut comments carry no task or ticket IDs.
-- Before `inbox ack`, the Manager runs `/ponytail-review` on that task's changes (Claude Code), or reviews them against the same criteria elsewhere. Must-fix findings become a follow-up TAP or a fix note first.
+- Before `inbox ack`, the Manager has the `nam-reviewer` subagent review that task's changes (Claude Code, §13), or reviews them against the same criteria elsewhere: correct, safe, risky logic tested, no code the TAP did not need. Must-fix findings become a follow-up TAP or a fix note first.
 - When planning a phase, the Manager may run `/ponytail-debt` (Claude Code) and fold shortcuts that are due into the plan.
 - A TAP names a ponytail level (`lite`, `ultra`, `off`) only when the default `full` does not fit.
 
@@ -268,6 +268,24 @@ Project-specific rules live outside the shared prompts so a NAM upgrade never ov
 Typical add-ons: notification rules (`nam-notify.mjs`), background execution with the `nam-implementer` subagent, and product-specific how-tos for Implementation agents. `install.mjs` never writes to `.nam/Local/`.
 
 An add-on may point to the project's own files, such as a guide in `.nam/Guides/` or a script in `.nam/Scripts/`. The installer leaves a file alone when this source repo never shipped it, and reports a file as stale only when NAM shipped it once and has since dropped it.
+
+---
+
+## 13. Subagents and context budget (Claude Code)
+
+Every model call re-reads the whole context, so NAM keeps contexts small. The installer merges these into `.claude/settings.json`; override them in `.claude/settings.local.json`:
+
+| Setting | Value | Effect |
+|---------|-------|--------|
+| `env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` | `15` | Compacts at about 150k tokens of the 1M window instead of near the end |
+| `env.BASH_MAX_OUTPUT_LENGTH` | `8000` | Caps one shell output at 8,000 characters |
+
+Two subagents ship in `.claude/agents/`:
+
+- **`nam-implementer`** (Sonnet) runs one TAP unattended when `.nam/Local/nam-manager.md` allows background runs. Its prompt is self-contained: it does not read `nam-impl.md` or the guides, but it does read `.nam/Local/nam-impl.md`. A `tools:` allowlist keeps its starting context near 11k tokens instead of 45k. It finds code with `base ast query` (`--target <main checkout>` in a git worktree), writes the Memory Log, runs `complete`, and replies in at most 20 lines. The Manager may pass another model when spawning it.
+- **`nam-reviewer`** (Opus, read-only) reviews one completed task before `inbox ack`, so diffs stay out of the Manager's context. The Manager gives it the task's goal, the Memory Log path and the changes to review, and passes `model: sonnet` when the task ran on Opus so each task gets the other family's eye. It replies `Verdict: ok | fix | block` with must-fix lines.
+
+The Manager reads the plan's header and current phase rather than the whole file, reads only the guide sections it needs, and replaces the plan's `Last Modification:` line instead of appending to it.
 
 ---
 

@@ -122,9 +122,13 @@ function mergeCursorHooks(dest, src) {
   return out;
 }
 
-/** Claude Code settings.json: { hooks: { event: [{ matcher?, hooks: [{ type, command }] }] } } */
+/**
+ * Claude Code settings.json: { env?, hooks: { event: [{ matcher?, hooks: [{ type, command }] }] } }
+ * NAM's env keys win; the project's other keys stay (override NAM's in .claude/settings.local.json).
+ */
 function mergeClaudeSettings(dest, src) {
   const out = { ...dest, hooks: { ...(dest.hooks || {}) } };
+  if (src.env || dest.env) out.env = { ...(dest.env || {}), ...(src.env || {}) };
   for (const [event, groups] of Object.entries(out.hooks)) {
     out.hooks[event] = groups
       .map((g) => ({ ...g, hooks: (g.hooks || []).filter((h) => !IS_NAM_HOOK.test(h.command || "")) }))

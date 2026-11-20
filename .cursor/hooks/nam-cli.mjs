@@ -58,7 +58,7 @@ Commands:
   role clear [--conversation ID]
 
   assign --agent Agent_X --task-ref "Task X.Y - Title" --log <memory_log_path> (--file tap.md | --stdin)
-  queue list --agent Agent_X
+  queue list --agent Agent_X [--all]     open items only; --all adds completed ones
   claim --agent Agent_X [--id 001]
   complete --agent Agent_X --log <path> [--notes TEXT] [--important] [--compat] [--adhoc]
 
@@ -67,7 +67,7 @@ Commands:
       (optional Task digression only — plan tasks use mailbox queue)
   dispatch list
 
-  inbox list
+  inbox list [--all]             unread entries only; --all adds acked ones
   inbox ack --all | --task-ref TEXT
 
   doctor                         base preflight (exit 1 if a check fails) + ponytail check (warn-only)
@@ -235,7 +235,10 @@ async function cmdQueue(args) {
   if (sub !== "list") usage(1);
   const agent = args.agent;
   if (!agent) throw new Error("--agent required");
-  printJson(summarizeAgentQueue(agent));
+  const q = summarizeAgentQueue(agent);
+  // Completed items pile up forever; print open work only unless --all.
+  const open = q.items.filter((i) => i.status !== "completed");
+  printJson(args.all ? q : { ...q, completed_count: q.items.length - open.length, items: open });
 }
 
 async function cmdClaim(args) {
@@ -320,7 +323,9 @@ async function cmdInbox(args) {
   const sub = args._[1];
   const inbox = loadManagerInbox();
   if (sub === "list") {
-    printJson(inbox);
+    // Acked entries pile up forever; print unread ones only unless --all.
+    const open = inbox.entries.filter((e) => !e.acked);
+    printJson(args.all ? inbox : { unread: open.length, acked_count: inbox.entries.length - open.length, entries: open });
     return;
   }
   if (sub === "ack") {

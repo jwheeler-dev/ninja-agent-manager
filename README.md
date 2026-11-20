@@ -74,10 +74,10 @@ Prefer the CLI for queue and role mutations:
 ```bash
 node .cursor/hooks/nam-cli.mjs status
 node .cursor/hooks/nam-cli.mjs assign --agent Agent_X --task-ref "Task X.Y - Title" --log <memory_log_path> --file tap.md
-node .cursor/hooks/nam-cli.mjs queue list --agent Agent_X
+node .cursor/hooks/nam-cli.mjs queue list --agent Agent_X [--all]
 node .cursor/hooks/nam-cli.mjs claim --agent Agent_X
 node .cursor/hooks/nam-cli.mjs complete --agent Agent_X --log <path>
-node .cursor/hooks/nam-cli.mjs inbox list
+node .cursor/hooks/nam-cli.mjs inbox list [--all]
 node .cursor/hooks/nam-cli.mjs inbox ack --all
 node .cursor/hooks/nam-cli.mjs doctor
 node .cursor/hooks/nam-cli.mjs handover register --agent Manager --file <numbered handover file>
@@ -133,7 +133,7 @@ It copies the guides, commands, hooks and every host's prompt wrappers, merges N
 - **Cursor**, or **VS Code** with GitHub Copilot Chat, Continue, or Gemini CLI
 - Node.js (for `nam-cli` and hook scripts)
 - [base](https://docs.basemode.ai/install) CLI on PATH for the code map, handoffs and forks. NAM still works without it but warns; check with `node .cursor/hooks/nam-cli.mjs doctor`.
-- [ponytail](https://github.com/DietrichGebert/ponytail) for coding discipline: the Claude Code plugin (`/plugin marketplace add DietrichGebert/ponytail`, then `/plugin install ponytail@ponytail`); the installer adds its Cursor rule. Implementation agents follow it within the TAP's scope and the Manager reviews with `/ponytail-review` before acking. Optional and warn-only, like base: `doctor` reports it, `NAM_PONYTAIL=off` skips the check.
+- [ponytail](https://github.com/DietrichGebert/ponytail) for coding discipline: the Claude Code plugin (`/plugin marketplace add DietrichGebert/ponytail`, then `/plugin install ponytail@ponytail`); the installer adds its Cursor rule. Implementation agents follow it within the TAP's scope and the Manager has the read-only `nam-reviewer` subagent review each task before acking (Claude Code; elsewhere it reviews against the same criteria). Optional and warn-only, like base: `doctor` reports it, `NAM_PONYTAIL=off` skips the check.
 
 ## License
 

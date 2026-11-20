@@ -1,4 +1,8 @@
 {
+  "env": {
+    "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "15",
+    "BASH_MAX_OUTPUT_LENGTH": "8000"
+  },
   "hooks": {
     "SessionStart": [
       {
