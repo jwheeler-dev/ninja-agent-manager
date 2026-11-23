@@ -94,7 +94,7 @@ function buildContext(conversationId, host) {
         `Conversation id: \`${conversationId}\` (env \`NAM_CONVERSATION_ID\`).`,
         "Register role:",
         "`node .cursor/hooks/nam-cli.mjs role set --role manager|implementation --eligible false`",
-        "Prefer CLI for assign/claim/complete/dispatch. See `.nam/Guides/Automation_Guide.md`.",
+        "Prefer CLI for assign/claim/complete/dispatch. To look up a command, search `.nam/Guides/Automation_Guide.md` for it; do not read the whole guide.",
       ].join("\n"),
     );
   }

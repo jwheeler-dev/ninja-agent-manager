@@ -8,7 +8,7 @@ description: NAM 1.0 (Ninja Agent Manager) - Manager Handover
 
 > **Project add-ons:** if `.nam/Local/nam-handover-manager.md` exists, read it after this prompt and follow it. It holds this project's own rules and wins where it conflicts with this prompt. The NAM installer never overwrites `.nam/Local/`.
 
-This prompt defines how Manager Agents execute handover procedures to transfer project coordination context to incoming Manager Agent instances when approaching context window limits.
+This prompt defines how Manager Agents execute handover procedures to transfer project coordination context to an incoming Manager Agent instance. When to hand over is set in the Manager prompt (§6 Operating Rules): context size alone is never a reason.
 
 ---
 
@@ -53,6 +53,7 @@ Synthesize current project state by reviewing:
 - Implementation Plan for phase status
 - Memory Root for coordination history
 - Recent Memory Logs for agent outputs and dependencies
+- The previous Handover File, for User directives and decisions that still apply
 
 ### Step 3: Artifact Creation
 Create Manager Handover File and Handover Prompt using templates in §4. Follow file organization in §5.
@@ -94,7 +95,7 @@ Read the Handover File for active coordination context:
 `.nam/Memory/Handovers/Manager_Agent_Handovers/Manager_Agent_Handover_File_[N].md`
 
 ## Memory Logs to Read
-Read the following recent Memory Logs from the current phase:
+Read only the frontmatter and **Summary** of these recent Memory Logs from the current phase:
 - `.nam/Memory/Phase_XX_<slug>/[Task_Log_XX_YY_<slug>.md]`
 - `.nam/Memory/Phase_XX_<slug>/[Task_Log_XX_YY_<slug>.md]`
 [List recent logs relevant to understanding current state - typically last 2-3 completed tasks]
@@ -111,6 +112,8 @@ Read the following recent Memory Logs from the current phase:
 ```
 
 ### Manager Handover File Template
+
+**Self-contained:** the incoming Manager reads only this Handover File, never earlier ones. Carry forward every User directive and decision from the previous Handover File that still applies, merged and deduped, one terse line each; drop those that are done or superseded. Never tell the incoming Manager to read an earlier Handover File, and do not copy what the Implementation Plan, Memory Logs or `.nam/Local/` already hold.
 
 **YAML Frontmatter:**
 ```yaml

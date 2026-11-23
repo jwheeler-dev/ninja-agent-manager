@@ -7,7 +7,7 @@ Read and follow in full the initiation prompt below.
 
 @{.cursor/commands/nam-manager.md}
 
-Follow `.nam/Guides/Automation_Guide.md` for queue, CLI, and handover rules.
+Look up queue, CLI and handover rules in `.nam/Guides/Automation_Guide.md` by searching it for the command you need; do not read the whole guide.
 Prefer `node .cursor/hooks/nam-cli.mjs` for all disk mutations (role, assign, inbox, handover).
 Manager enqueues only — do not execute Implementation Plan tasks yourself.
 
